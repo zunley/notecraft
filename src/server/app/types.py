@@ -1,7 +1,7 @@
 """共享契约类型：api / core / adapters 三方共用的数据形状。
 
 ★ 跨层类型的唯一来源：改协议形状只改本文件；
-  api/schemas.py 只做 HTTP 序列化壳，客户端侧对应 client/web/src/sync/types.ts。
+  api/schemas.py 只做 HTTP 序列化壳，客户端侧对应 client/web/src/sync/types.py。
 """
 
 from dataclasses import dataclass
@@ -9,10 +9,10 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class ManifestEntry:
-    path: str
-    hash: str
-    mtime: float
-    size: int
+    path: str  # 路径密文（服务端看不到目录结构）
+    hash: str  # 传输字节（密文）的 sha256
+    mtime: float  # 粗粒度（按天舍入；真实值在密文内）
+    size: int  # 密文长度（客户端已按 4KiB 对齐填充）
 
 
 @dataclass(frozen=True)
@@ -23,7 +23,7 @@ class Manifest:
 
 @dataclass(frozen=True)
 class StoredFile:
-    """同步副本中的单文件；hash = 传输字节的 sha256（加密留缝，§5.6）。"""
+    """同步副本中的单文件；content 为密文，hash = 密文的 sha256（DESIGN.md §6.4）。"""
 
     content: str
     hash: str
@@ -33,13 +33,14 @@ class StoredFile:
 @dataclass(frozen=True)
 class Token:
     value: str
-    subject: str  # sub：命名空间与归档的用户身份
+    subject: str  # sub = uid（注册时生成，永不改变）
     expires_at: float
 
 
 @dataclass(frozen=True)
-class RelayRecord:
-    """透传归档记录（转发的副产品，★ 不是会话存储：服务端不理解、不编排对话）。"""
+class User:
+    """用户记录（API.md §8）；login_verifier 与 protected_key 仅在认证用例中使用。"""
 
-    conversation_id: str
-    messages: list[dict]  # TODO: 需要收紧时再换具体模型
+    uid: str
+    username: str
+    created_at: float

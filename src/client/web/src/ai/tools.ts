@@ -1,10 +1,10 @@
 /**
- * 文件工具注册表（v1 agent.py 前移客户端，DESIGN-V2 §3.4）。
+ * 文件工具注册表（DESIGN.md §3.4）。
  *
  * 声明式注册表而非硬编码数组：LLM 的 tools 数组、write-gate 挂载、离线执行
  * 全部由注册表驱动——新增工具 = 在 tools 中加一项，不改工具循环。
  *
- * 语义沿用 v1：写工具的会话级授权（write-gate）、.trash/ 删除、免确认开关；
+ * 语义：写工具的会话级授权（write-gate）、.trash/ 删除、免确认开关；
  * 全部直接执行于本地 StorageAdapter，不经过服务端、离线可用。
  */
 import type { StorageAdapter } from "../storage/types";

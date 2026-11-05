@@ -7,11 +7,11 @@
 - ports  接口契约（依赖倒置的接缝）
 - adapters/ 实现 ports，由本文件构造并注入 core
 
-★ 灵活性来源：换实现（用户表凭据、加密同步副本、LLM 直连网关、归档介质）
-  只动 adapters/ 与本文件，core/ 与 api/ 零改动——对应 DESIGN-V2 的全部演进切换点。
+★ 灵活性来源：换实现（用户表账号、LLM 直连网关）只动 adapters/ 与本文件，
+  core/ 与 api/ 零改动——对应 ARCHITECTURE.md §4 的全部演进切换点。
 
 TODO:
-- 构造 adapters（FileNoteStore / EnvCredentials / HttpLlmGateway / FsSessionArchive）→ 装配 core 用例 → 注入 api 路由
+- 构造 adapters（FileUserStore / FileNoteStore / HttpLlmGateway / MemRelayQuota）→ 装配 core 用例 → 注入 api 路由
   ★ 装配形态（不引 DI 容器）：实例挂 app.state，api 层用 FastAPI Depends 取用；
     测试替换用 dependency_overrides 注入 fake ports，不 monkeypatch
 - 注册统一异常处理器：errors.DomainError → HTTP（AuthError→401，NotFoundError→404，ConflictError→409）
@@ -19,6 +19,8 @@ TODO:
 - 注册路由（见 api/__init__.py：auth / sync / relay / health）
 - 可选静态托管客户端构建产物（src/client/web/dist），浏览器即开即用
 - 中间件挂点（限速/日志/指标等横切能力）：统一在本文件，业务模块不自行挂
+  ★ 按 IP 的注册/登录限速中间件在这里；按 username 的限速在 core.auth（要读 body）
+  ★ 日志纪律：不记录请求体/响应体（零知识，DESIGN.md §6.5）
 """
 
 from fastapi import FastAPI
@@ -27,8 +29,8 @@ from fastapi import FastAPI
 def create_app() -> FastAPI:
     app = FastAPI(title="notecraft", version="0.1.0")
 
-    # TODO: 构造 adapters（FileNoteStore / EnvCredentials / HttpLlmGateway / FsSessionArchive）
-    # TODO: 组装 core 用例（auth / sync /relay）→ 实例挂 app.state
+    # TODO: 构造 adapters（FileUserStore / FileNoteStore / HttpLlmGateway / MemRelayQuota）
+    # TODO: 组装 core 用例（auth / sync / relay）→ 实例挂 app.state
     # TODO: app.include_router(api_router)  +  require_user 依赖收口
     # TODO: app.add_exception_handler(errors.DomainError, to_http) 统一错误翻译
     # TODO: 静态托管 src/client/web/dist

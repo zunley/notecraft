@@ -1,4 +1,4 @@
-"""HTTP 传输层（薄壳）：解析请求 → 调用 core 用例 → 组装响应。
+"""HTTP 传输层（薄壳）：解析请求 → 调 core 用例 → 组装响应。
 
 规则：不含业务规则、不直接触碰 adapters，只依赖 core 与 deps。
 
@@ -8,7 +8,7 @@ TODO:
 - api_router = APIRouter()，挂载：
     auth_router   （./auth.py）   prefix="/api/auth"
     sync_router   （./sync.py）   prefix="/api/sync"
-    relay_router  （./relay.py）  prefix="/api/ai/v1"
+    relay_router  （./relay.py）  prefix="/api/ai/v1"   （/v1 是 OpenAI 兼容约定）
     health_router （./health.py） 免鉴权
 """
 # from fastapi import APIRouter

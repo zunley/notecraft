@@ -1,7 +1,9 @@
-/** 同步协议类型（协议 v1，见 docs/DESIGN-V2.md §5）。 */
+/** 同步协议类型（协议细节见 docs/DESIGN.md §5；服务端只见密文，§6.4）。 */
 
 export interface ManifestEntry {
+  /** 路径密文——本地树用解密后的路径构建 */
   path: string;
+  /** 传输字节（密文）的 sha256 */
   hash: string;
   mtime: number;
   size: number;

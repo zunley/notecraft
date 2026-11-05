@@ -5,11 +5,11 @@ services:
     ports:
       - "${NOTE_MD_PORT:-8080}:8080"
     volumes:
-      - ./notes:/notes          # 笔记本同步副本
-      - ./data:/data            # 应用数据（sessions/ 归档）
+      - ./notes:/notes          # 各用户密文仓库（<uid>/ 分目录）
+      - ./data:/data            # 用户表 + protected_key（必须备份）
     environment:
-      NOTE_MD_USERNAME: ${NOTE_MD_USERNAME:?请在 .env 中设置登录账号}
-      NOTE_MD_PASSWORD: ${NOTE_MD_PASSWORD:?请在 .env 中设置登录口令}
+      NOTE_MD_REGISTRATION: ${NOTE_MD_REGISTRATION:-open}   # 注册策略 open/invite/closed
+      NOTE_MD_INVITE_CODE: ${NOTE_MD_INVITE_CODE:-}         # invite 模式邀请码（可选）
       NOTE_MD_TOKEN_TTL: ${NOTE_MD_TOKEN_TTL:-72h}
       NOTE_MD_DATA_DIR: ${NOTE_MD_DATA_DIR:-/data}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}

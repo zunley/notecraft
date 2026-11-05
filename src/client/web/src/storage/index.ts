@@ -2,8 +2,8 @@
  * 平台注入点：按运行环境返回唯一的 StorageAdapter 实例。
  *
  * TODO: Tauri 环境 → TauriFsAdapter；浏览器 → OpfsAdapter。
- * 组合点（加密纪律③）：返回值是唯一包装位——二期 CipherAdapter 以装饰器包在
- * 外层（读时解密、写时加密），业务层与协议零改动。
+ * ★ 本层保持明文语义——加密不在 StorageAdapter 外面包装饰器，
+ *   而在同步编解码边界（sync/codec.ts，ARCHITECTURE.md §8 纪律 2）。
  */
 import type { StorageAdapter } from "./types";
 

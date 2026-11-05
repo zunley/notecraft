@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"默认权限：核心窗口能力 + 文件系统（沙箱内读写笔记目录）+ 目录选择","local":true,"windows":["main"],"permissions":["core:default","dialog:default","fs:allow-read-dir","fs:allow-read-file","fs:allow-write-file","fs:allow-mkdir","fs:allow-remove","fs:allow-rename","fs:allow-exists","fs:allow-stat",{"identifier":"fs:scope","allow":[{"path":"$HOME/**"}]}]}}

@@ -1,12 +1,41 @@
 /**
- * Tauri 文件系统适配器（桌面 + 移动）。
+ * TauriFs 适配器（桌面/移动：真实 .md 文件，「文件即真相」）。
  *
- * TODO: 基于 @tauri-apps/plugin-fs 实现 StorageAdapter：
- * - 桌面：用户通过目录选择器选定的笔记目录（文件即真相）
- * - 移动：App 沙箱目录（iOS Documents，可经「文件」App 访问）
- * - 实现 watch()（桌面端目录变更监听）
+ * 阶段 6（M4）实现：@tauri-apps/plugin-fs 读写用户选定的笔记目录。
+ * ★ 本文件是业务代码中唯一允许 import @tauri-apps/* 的地方（lint 强制）。
+ * ★ 语义与 OpfsAdapter 对齐：本地明文、baseHash 乐观锁、删除进 .trash/。
  */
-import type { StorageAdapter } from "./types";
+import type { Entry, StorageAdapter } from "./types";
 
-// TODO: export class TauriFsAdapter implements StorageAdapter {}
-export type TauriFsAdapter = StorageAdapter;
+export class TauriFsAdapter implements StorageAdapter {
+  private constructor() {}
+
+  /** 由平台壳注入根目录（阶段 6：目录选择器 + 持久化） */
+  static async create(): Promise<TauriFsAdapter> {
+    throw new Error("TauriFsAdapter 尚未实现（阶段 6 / M4）");
+  }
+
+  async readDir(_path: string): Promise<Entry[]> {
+    throw new Error("TauriFsAdapter 尚未实现（阶段 6 / M4）");
+  }
+
+  async readFile(_path: string): Promise<{ content: string; hash: string; mtime: number }> {
+    throw new Error("TauriFsAdapter 尚未实现（阶段 6 / M4）");
+  }
+
+  async writeFile(_path: string, _content: string, _baseHash?: string): Promise<void> {
+    throw new Error("TauriFsAdapter 尚未实现（阶段 6 / M4）");
+  }
+
+  async rename(_from: string, _to: string): Promise<void> {
+    throw new Error("TauriFsAdapter 尚未实现（阶段 6 / M4）");
+  }
+
+  async remove(_path: string): Promise<void> {
+    throw new Error("TauriFsAdapter 尚未实现（阶段 6 / M4）");
+  }
+
+  async stat(_path: string): Promise<Entry | null> {
+    throw new Error("TauriFsAdapter 尚未实现（阶段 6 / M4）");
+  }
+}

@@ -897,11 +897,18 @@ textarea {
 }
 
 /* ── 移动单栏（M5：抽屉 + 全屏 sheet）──────────────────────── */
+.drawer-toggle {
+  display: none;
+}
 .drawer-mask {
   display: none;
 }
 
 @media (max-width: 768px) {
+  .drawer-toggle {
+    display: inline-flex;
+    align-items: center;
+  }
   .topbar {
     padding: 0 12px;
     gap: 8px;

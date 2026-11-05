@@ -1,0 +1,41 @@
+{
+  "name": "notecraft-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@assistant-ui/react": "^0.15",
+    "@assistant-ui/react-markdown": "^0.14",
+    "@codemirror/autocomplete": "^6",
+    "@codemirror/commands": "^6",
+    "@codemirror/lang-markdown": "^6",
+    "@codemirror/language": "^6",
+    "@codemirror/state": "^6",
+    "@codemirror/view": "^6",
+    "@fontsource/jetbrains-mono": "^5",
+    "@fontsource/noto-sans-sc": "^5",
+    "@fontsource/space-grotesk": "^5",
+    "@lezer/highlight": "^1",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-fs": "^2",
+    "markdown-it": "^14",
+    "react": "^19",
+    "react-dom": "^19",
+    "remark-gfm": "^4"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/markdown-it": "^14",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4",
+    "typescript": "^5.6",
+    "vite": "^6"
+  }
+}

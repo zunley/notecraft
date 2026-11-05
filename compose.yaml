@@ -1,0 +1,19 @@
+services:
+  notecraft:
+    build: .
+    image: ghcr.io/zunley/notecraft:latest
+    ports:
+      - "${NOTE_MD_PORT:-8080}:8080"
+    volumes:
+      - ./notes:/notes          # 笔记本同步副本
+      - ./data:/data            # 应用数据（sessions/ 归档）
+    environment:
+      NOTE_MD_USERNAME: ${NOTE_MD_USERNAME:?请在 .env 中设置登录账号}
+      NOTE_MD_PASSWORD: ${NOTE_MD_PASSWORD:?请在 .env 中设置登录口令}
+      NOTE_MD_TOKEN_TTL: ${NOTE_MD_TOKEN_TTL:-72h}
+      NOTE_MD_DATA_DIR: ${NOTE_MD_DATA_DIR:-/data}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      TZ: Asia/Shanghai
+    restart: unless-stopped

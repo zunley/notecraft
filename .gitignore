@@ -1,0 +1,21 @@
+# Python
+.venv/
+**/__pycache__/
+**/*.pyc
+
+# Node
+node_modules/
+src/web/dist/
+*.tsbuildinfo
+
+# Tauri / Rust
+src/tauri/target/
+
+# 运行时数据（笔记本副本与应用数据不入库）
+notes/
+data/
+.env
+
+# 杂项
+*.log
+.DS_Store

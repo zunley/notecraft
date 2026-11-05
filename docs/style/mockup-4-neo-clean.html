@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案四 · 轻新粗野 — note.md 样式稿</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FAF8F2; --panel:#F2EFE6; --card:#FFFDF7;
+  --tx:#1A1A1A; --tx-2:#7A776C; --tx-3:#B2AE9F;
+  --line:#DAD5C4;
+  --blue:#2E5CFF; --orange:#E8912D; --lime:#DCF277;
+  --font:"Space Grotesk","Noto Sans SC",-apple-system,"PingFang SC",sans-serif;
+  --mono:"JetBrains Mono","Noto Sans SC",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px}
+body{
+  font-family:var(--font); background:var(--bg); color:var(--tx);
+  height:100vh; display:flex; flex-direction:column; -webkit-font-smoothing:antialiased;
+}
+/* topbar */
+.topbar{
+  height:54px; display:flex; align-items:center; gap:14px; padding:0 20px;
+  border-bottom:2px solid var(--tx); background:var(--bg);
+}
+.brand{font-weight:700; font-size:1.15rem; letter-spacing:-.02em}
+.brand em{font-style:normal; color:var(--blue)}
+.topbar .path{color:var(--tx-2); font-size:.82rem; font-family:var(--mono)}
+.topbar .path b{color:var(--tx); font-weight:500}
+.spacer{flex:1}
+.nb-btn{
+  border:2px solid var(--tx); background:var(--card); color:var(--tx);
+  border-radius:8px; padding:6px 13px; font-size:.8rem; font-weight:600;
+  cursor:pointer; font-family:var(--font); transition:.12s;
+}
+.nb-btn:hover{background:var(--lime)}
+.nb-btn kbd{font-family:var(--mono); font-size:.68rem; color:var(--tx-2); margin-left:6px}
+.nb-btn.solid{background:var(--tx); color:var(--bg)}
+.nb-btn.solid:hover{background:var(--blue); color:#fff}
+/* layout */
+.layout{flex:1; display:flex; min-height:0}
+.sidebar{
+  width:262px; flex-shrink:0; background:var(--panel);
+  border-right:2px solid var(--tx); padding:18px 10px; overflow:auto;
+}
+.tree{list-style:none; font-size:.885rem; font-weight:500}
+.tree .dir{
+  display:flex; align-items:center; gap:8px; padding:6px 10px; cursor:pointer;
+}
+.tree .dir .caret{color:var(--blue); font-size:.72rem}
+.tree .dir .name{
+  font-family:var(--mono); color:var(--tx); text-transform:uppercase;
+  font-size:.78rem; letter-spacing:.04em;
+}
+.tree .dir .plus{
+  margin-left:auto; opacity:0; width:20px; height:20px; border-radius:5px;
+  border:2px solid var(--tx); background:var(--lime); color:var(--tx);
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:.72rem; cursor:pointer; transition:.12s;
+}
+.tree .dir:hover .plus, .tree .dir.hovered .plus{opacity:1}
+.tree ul{list-style:none; margin-left:18px}
+.tree .file{
+  padding:5px 10px; border-radius:6px; cursor:pointer; color:var(--tx-2);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.tree .file:hover{color:var(--tx); background:#E9E4D4}
+.tree .file.active{background:var(--blue); color:#fff; font-weight:600}
+.new-row{
+  display:flex; align-items:center; gap:7px; margin:7px 4px; padding:5px 10px;
+  background:var(--card); border:2px solid var(--blue); border-radius:8px;
+  font-family:var(--mono); font-size:.78rem;
+}
+.new-row .target{color:var(--tx-2)}
+.new-row input{
+  border:none; outline:none; background:none; width:110px;
+  font-family:var(--mono); font-size:.78rem; color:var(--tx);
+}
+.new-row .hint{margin-left:auto; color:var(--tx-3); font-size:.64rem}
+.sidebar-actions{display:flex; gap:8px; margin:16px 8px 0}
+.sidebar-actions .nb-btn{flex:1; text-align:center}
+/* editor */
+.editor-wrap{flex:1; overflow:auto; padding:44px 40px 130px}
+.paper{
+  max-width:780px; margin:0 auto; background:var(--card);
+  border:2px solid var(--tx); border-radius:12px; padding:58px 68px 76px;
+  box-shadow:6px 6px 0 var(--panel);
+}
+.doc-status{
+  display:inline-flex; align-items:center; gap:8px; font-size:.72rem;
+  font-family:var(--mono); background:var(--lime); color:var(--tx);
+  padding:4px 12px; border-radius:20px; margin-bottom:28px; font-weight:500;
+}
+h1{
+  font-family:"Noto Sans SC",var(--font); font-weight:900;
+  font-size:2.3rem; letter-spacing:-.01em; line-height:1.32; margin-bottom:12px;
+}
+.meta{color:var(--tx-3); font-size:.8rem; font-family:var(--mono); margin-bottom:36px}
+h2{
+  font-family:"Noto Sans SC",var(--font); font-size:1.22rem; font-weight:700;
+  margin:40px 0 16px; display:flex; align-items:center; gap:12px;
+}
+h2::before{
+  content:""; width:12px; height:12px; background:var(--orange);
+  border:2px solid var(--tx); border-radius:3px;
+}
+p{line-height:1.92; margin:14px 0; color:#2A2A28}
+a{color:var(--blue); text-decoration:none; border-bottom:2px solid var(--blue)}
+code{
+  font-family:var(--mono); font-size:.83em; background:var(--lime);
+  padding:2px 8px; border-radius:5px; color:var(--tx); font-weight:500;
+}
+ul.tasks{list-style:none; margin:16px 0}
+ul.tasks li{display:flex; align-items:center; gap:11px; padding:7px 0; line-height:1.7}
+.\boxed{
+  width:18px;height:18px;border-radius:5px;border:2px solid var(--tx);
+  flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; font-size:.68rem;
+}
+.box.done{background:var(--blue); border-color:var(--tx); color:#fff}
+ul.tasks li.done{color:var(--tx-3); text-decoration:line-through}
+ul.plain{margin:14px 0; list-style:none}
+ul.plain li{position:relative; padding:5px 0 5px 22px; line-height:1.85}
+ul.plain li::before{
+  content:""; position:absolute; left:0; top:13px;
+  width:9px;height:9px;background:var(--orange); border:2px solid var(--tx); border-radius:2px;
+}
+blockquote{
+  margin:24px 0; padding:18px 24px; border:2px solid var(--tx); border-radius:10px;
+  background:var(--panel); box-shadow:4px 4px 0 var(--lime);
+}
+blockquote p{color:var(--tx)}
+pre{
+  background:#23221E; border:2px solid var(--tx); border-radius:10px;
+  padding:18px 22px; overflow:auto; margin:22px 0;
+}
+pre code{background:none; padding:0; color:#E8E3D2; font-size:.83rem; line-height:1.75}
+table{width:100%; border-collapse:collapse; margin:22px 0; font-size:.88rem}
+th,td{text-align:left; padding:11px 13px; border:2px solid var(--tx)}
+th{background:var(--panel); font-weight:700; font-size:.76rem}
+td:first-child{font-family:var(--mono); color:var(--blue); font-weight:600}
+/* FAB + AI float open */
+.fab{
+  position:fixed; right:420px; bottom:32px; width:58px; height:58px; border-radius:16px;
+  background:var(--blue); color:#fff; border:2px solid var(--tx); cursor:pointer;
+  font-size:1.35rem; box-shadow:4px 4px 0 var(--tx); transition:.12s;
+}
+.fab:hover{transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--tx)}
+.ai-panel{
+  position:fixed; right:26px; bottom:26px; width:380px; height:520px;
+  background:var(--card); border:2px solid var(--tx); border-radius:14px;
+  box-shadow:8px 8px 0 var(--panel); display:flex; flex-direction:column;
+  overflow:hidden;
+}
+.ai-head{
+  display:flex; align-items:center; gap:10px; padding:14px 18px;
+  border-bottom:2px solid var(--tx); font-weight:700; font-size:.95rem;
+}
+.ai-head .badge{
+  background:var(--lime); border:2px solid var(--tx); border-radius:20px;
+  font-size:.68rem; padding:2px 10px; font-family:var(--mono);
+}
+.ai-head .x{margin-left:auto; cursor:pointer; color:var(--tx-2); font-size:1.1rem}
+.ai-body{flex:1; overflow:auto; padding:18px; font-size:.86rem; line-height:1.8}
+.msg-user{
+  background:var(--blue); color:#fff; padding:10px 14px; border-radius:12px 12px 3px 12px;
+  margin:10px 0 14px auto; max-width:82%;
+}
+.msg-ai{color:#2A2A28; margin:4px 0 12px}
+.tool-card{
+  border:2px solid var(--tx); border-radius:9px; padding:10px 13px; margin:10px 0;
+  font-family:var(--mono); font-size:.74rem; background:var(--panel);
+}
+.tool-card .tag{
+  display:inline-block; background:var(--orange); color:#fff; border:2px solid var(--tx);
+  border-radius:5px; padding:0 7px; font-size:.66rem; margin-right:8px; font-weight:700;
+}
+.tool-card .link{color:var(--blue); text-decoration:underline}
+.ai-input{
+  border-top:2px solid var(--tx); padding:12px 14px; display:flex; gap:10px;
+}
+.ai-input input{
+  flex:1; border:2px solid var(--tx); border-radius:9px; padding:9px 13px;
+  font-family:var(--font); font-size:.85rem; outline:none; background:var(--bg);
+}
+.ai-input button{
+  border:2px solid var(--tx); background:var(--lime); border-radius:9px;
+  padding:0 16px; font-weight:700; cursor:pointer; font-family:var(--font);
+}
+/* legend */
+.legend{
+  position:fixed; left:20px; bottom:18px; background:var(--card);
+  border:2px solid var(--tx); border-radius:10px; padding:12px 16px;
+  font-size:.71rem; color:var(--tx-2); line-height:1.95;
+  box-shadow:4px 4px 0 var(--panel);
+}
+.legend b{color:var(--tx)}
+.sw{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px;border:1.5px solid var(--tx)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">note<em>.</em>md</div>
+  <div class="path">brain / <b>记忆.md</b></div>
+  <div class="spacer"></div>
+  <button class="nb-btn">搜索<kbd>⌘K</kbd></button>
+  <button class="nb-btn">分栏</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <ul class="tree">
+      <li class="dir"><span class="caret">▾</span><span class="name">journal</span></li>
+      <li><ul><li class="file">2025.11 11月.md</li></ul></li>
+      <li class="dir hovered"><span class="caret">▾</span><span class="name">brain</span><span class="plus">＋</span></li>
+      <li><ul>
+        <li class="file active">记忆.md</li>
+        <li class="file">认知偏差.md</li>
+        <li class="file">原子笔记.md</li>
+        <li class="new-row"><span class="target">brain/</span><input placeholder="文件名.md"><span class="hint">↵ 创建 · Esc 取消</span></li>
+      </ul></li>
+      <li class="dir"><span class="caret">▾</span><span class="name">projects</span></li>
+      <li><ul>
+        <li class="file">note.md 规划.md</li>
+        <li class="file">部署清单.md</li>
+      </ul></li>
+    </ul>
+    <div class="sidebar-actions">
+      <button class="nb-btn solid">＋ 新建</button>
+    </div>
+  </aside>
+
+  <div class="editor-wrap">
+    <article class="paper">
+      <div class="doc-status">● 已保存 · 10:42 · 1,286 字</div>
+      <h1>记忆是思维的基础设施</h1>
+      <div class="meta">brain/记忆.md · 更新于今天 10:42</div>
+
+      <blockquote><p>记录不是为了囤积，而是为了在需要的时候能被找到。</p></blockquote>
+
+      <h2>本周重点</h2>
+      <ul class="tasks">
+        <li class="done"><span class="box done">✓</span>整理 FastMCP 工具清单</li>
+        <li><span class="box"></span>完成笔记容器化部署</li>
+        <li><span class="box"></span>读完《认知觉醒》第 3 章</li>
+      </ul>
+
+      <h2>一些想法</h2>
+      <p>在容器里挂载一个目录，就得到一个属于自己的笔记本。数据是纯 Markdown，
+      可以被 git 管理，也可以被任何工具读取——<a href="#">AI 只是其中一个读者</a>。
+      行内代码如 <code>docker compose up -d</code> 保持克制的样式。</p>
+      <ul class="plain">
+        <li>一个想法一个文件，文件名即标题</li>
+        <li>关系比内容更重要，用链接织网</li>
+        <li>写下来本身就是思考</li>
+      </ul>
+
+      <h2>示例代码</h2>
+      <pre><code>def hello():
+    return "note.md — 容器挂载即笔记本"</code></pre>
+
+      <h2>里程碑</h2>
+      <table>
+        <tr><th>阶段</th><th>内容</th><th>状态</th></tr>
+        <tr><td>M1</td><td>骨架：登录 / 目录树 / 编辑保存</td><td>进行中</td></tr>
+        <tr><td>M2</td><td>写作体验 / 主题</td><td>待开始</td></tr>
+        <tr><td>M3</td><td>AI 原生：MCP / 悬浮窗</td><td>待开始</td></tr>
+      </table>
+    </article>
+  </div>
+</div>
+
+<button class="fab" title="AI 助手 (⌘J)">✦</button>
+
+<div class="ai-panel">
+  <div class="ai-head">✦ AI 助手 <span class="badge">会话已授权写入</span><span class="x">×</span></div>
+  <div class="ai-body">
+    <div class="msg-user">帮我把部署相关的笔记整理到 projects 下，并建一个索引</div>
+    <div class="msg-ai">好的，我先看一下现有内容。</div>
+    <div class="tool-card"><span class="tag">读</span>search_files("部署") → 2 处命中</div>
+    <div class="tool-card"><span class="tag">写</span>create_file(<span class="link">projects/索引.md</span>) 已创建</div>
+    <div class="msg-ai">已创建 <b>projects/索引.md</b>，汇总了 3 篇相关笔记的链接。需要我继续调整结构吗？</div>
+    <div class="tool-card"><span class="tag">写</span>move_file(<span class="link">部署清单.md</span> → <span class="link">projects/部署清单.md</span>)</div>
+  </div>
+  <div class="ai-input">
+    <input placeholder="让 AI 帮你管理笔记…">
+    <button>发送</button>
+  </div>
+</div>
+
+<div class="legend">
+  <b>方案四 · 轻新粗野（已选定）</b>　纸白 + 电蓝/柠檬，粗黑标题、2px 硬边 + 偏移阴影（files.md 现代化）<br>
+  <span class="sw" style="background:#FAF8F2"></span>纸底 #FAF8F2
+  <span class="sw" style="background:#2E5CFF;margin-left:8px"></span>电蓝 #2E5CFF
+  <span class="sw" style="background:#E8912D;margin-left:8px"></span>橙 #E8912D
+  <span class="sw" style="background:#DCF277;margin-left:8px"></span>柠檬 #DCF277<br>
+  字体：Space Grotesk + Noto Sans SC 900（标题）· 代码 JetBrains Mono　※AI 悬浮窗展开态 + 新建行内输入态
+</div>
+
+</body>
+</html>

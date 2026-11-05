@@ -1,0 +1,6 @@
+/*
+ * 设计 tokens 与全局样式（方案四 · 轻新粗野）。
+ *
+ * TODO: 从 v1 迁移 src/web/src/theme.css（572 行 tokens + 样式）：
+ * --bg / --tx / --blue / --orange / --lime ...，见 docs/style/README.md。
+ */

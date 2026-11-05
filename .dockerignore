@@ -1,0 +1,12 @@
+.git
+.github
+.venv
+node_modules
+src/web/dist
+src/web/node_modules
+src/tauri/target
+docs
+notes
+data
+.env
+*.log

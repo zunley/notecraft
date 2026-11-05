@@ -53,10 +53,10 @@ notecraft/
 │   │   │   └── src/
 │   │   │       ├── main.tsx / App.tsx / theme.css
 │   │   │       ├── storage/    # StorageAdapter 抽象 + TauriFs / OPFS 实现
-│   │   │       ├── sync/       # 同步引擎（diff、推送、冲突副本）
-│   │   │       ├── ai/         # llmTransport（加密纪律①）+ tools + agent 运行时
+│   │   │       ├── sync/       # 同步引擎（diff、推送、冲突副本）+ codec.ts（加密纪律②）
+│   │   │       ├── ai/         # llmTransport（纪律①）+ tools 注册表 + agent 运行时
 │   │   │       ├── features/   # FileTree / Editor / Chat / Login / StatusBar
-│   │   │       └── lib/        # api.ts（仅 auth/sync/relay）+ markdown 工具
+│   │   │       └── lib/        # config.ts（配置单点）+ api.ts（仅 auth/sync/relay）+ markdown
 │   │   └── tauri/            # Rust 壳（Tauri 2）
 │   │       ├── tauri.conf.json / Cargo.toml / build.rs
 │   │       ├── capabilities/   # fs 等插件权限声明
@@ -65,9 +65,11 @@ notecraft/
 │       ├── requirements.txt
 │       ├── tests/smoke.py
 │       └── app/
-│           ├── main.py     # 组装根：构造 adapters → 注入 core → 注册路由
+│           ├── main.py     # 组装根：构造 adapters → 注入 core → 注册路由/异常翻译
 │           ├── config.py   # 环境变量配置（凭证/密钥只在 .env）
 │           ├── ports.py    # 接口契约（Protocol）——依赖倒置的接缝
+│           ├── types.py    # 共享契约类型（跨层唯一来源）
+│           ├── errors.py   # 领域错误（core 抛出，api 统一翻译为 HTTP）
 │           ├── api/        # HTTP 薄壳：routes 解析 → 调 core → 响应
 │           │   ├── __init__.py   # api_router 汇总
 │           │   ├── deps.py       # require_user（唯一切换点）
@@ -122,6 +124,13 @@ notecraft/
 - `core/` → `ports`：core 纯 Python，**禁止 import fastapi**，只依赖 Protocol；
 - `adapters/` → `ports`：实现 Protocol；**core 与 api 永不 import adapters**；
 - 装配只发生在 `main.py`（composition root）。
+
+**两条辅助规则**
+
+- **类型与错误各只有一个来源**：契约类型在 `app/types.py`（`api/schemas.py` 只做 HTTP 序列化壳），
+  领域错误在 `app/errors.py`（core 抛出，`main.py` 注册异常处理器统一翻译为 401/404/409）；
+- **装配不引 DI 容器**：实例挂 `app.state`，api 层用 FastAPI Depends 取用；
+  测试用 `dependency_overrides` 注入 fake ports，不 monkeypatch。
 
 **换实现只动 `adapters/` + `main.py`**，core/api 零改动——DESIGN-V2 的全部演进切换点因此收口：
 
@@ -185,7 +194,7 @@ login 双字段 → `core.auth` 经 Credentials 校验 → HMAC-SHA256 token（p
 ## 8. 加密留缝（本期不实现，写代码时的三条纪律）
 
 1. LLM 调用收敛为 `client/web/src/ai/llmTransport.ts` 单一模块；
-2. 同步 content 编解码走统一函数（当前直通）——加密即插 `CipherAdapter`（StorageAdapter ↔ 传输之间），manifest 与 API 协议零改动；`hash` 定义为传输字节的哈希，密文哈希天然一致；
+2. 同步 content 编解码只走 `client/web/src/sync/codec.ts`（当前直通）——加密即在 encode/decode 内插入，manifest 与 API 协议零改动；`hash` 定义为传输字节的哈希，密文哈希天然一致；
 3. 业务接口不读取服务端文件明文语义（服务端对应物：换 `NoteStore` 加密实现）。
 
 已知泄露面（二期处理）：文件路径明文、manifest 的 mtime/size 旁路信息。
@@ -209,9 +218,40 @@ login 双字段 → `core.auth` 经 Credentials 校验 → HMAC-SHA256 token（p
 - 服务端 Python 包名：**`app`**（`uvicorn app.main:app --app-dir src/server`）；
 - Tauri 壳目录：**`src/client/tauri/`**（若 `tauri init` CLI 不支持自定义路径，则回退默认 `src-tauri/` 移入 `src/client/`——未决项 1）。
 
+**协议演进约定**
+- relay 路径自带 `/v1`（OpenAI 兼容要求）；其余接口破坏性变更时在 `/api` 后加版本段（`/api/v2/...`）；
+- 同步协议版本以 manifest 响应的 `protocol` 字段预留（客户端 `config.syncProtocol` 对应），旧客户端可提示升级。
+
 **未决项**（不阻塞开工，见 DESIGN-V2 §11）
 1. Rust 壳目录命名最终确认（本仓库暂定 `src/client/tauri/`）；
 2. MCP 端点去留（建议 v3 再议）；
 3. 会话归档粒度：仅 LLM 往返 or 含客户端工具摘要；
 4. iOS 分发方式；
 5. `.trash/` 与冲突副本的清理策略。
+
+## 11. 取舍记录（简单性优先）
+
+原则：**只做「形状级」扩展点（类型、接口、注册表、统一函数），不做框架级抽象**。
+
+**采用（低成本、高收益）**
+
+| 项 | 落点 | 解决什么 |
+|----|------|----------|
+| 共享契约类型 | `server/app/types.py` | 端口契约可类型检查，改协议只改一处 |
+| 领域错误三类 | `server/app/errors.py` + main 统一翻译 | 401/404/409 语义有归属，新用例不重复发明错误处理 |
+| 工具注册表 | `client/web/src/ai/tools.ts`（ToolSpec[]） | 加工具 = 加一项声明；write-gate 按 kind 自动挂载 |
+| 编解码统一函数 | `client/web/src/sync/codec.ts` | E2E 加密只改一个文件（纪律②落成代码） |
+| 配置单点 | `client/web/src/lib/config.ts` | 切 DirectTransport 的全部改动量就是这里的两个参数 |
+| 装配形态约定 | `main.py`（app.state + Depends + dependency_overrides） | 可测试性，且不引入 DI 容器 |
+| 协议演进约定 | §10 | 版本协商有据可依，不需版本框架 |
+
+**明确不做（及升级触发条件）**
+
+| 不做 | 理由 | 何时再做 |
+|------|------|----------|
+| DI 容器 / IoC 框架 | 手工装配 + Depends 足够 | 装配重复出现 ~3 处以上 |
+| OpenAPI 代码生成 | 双写成本低于引入生成链 | 出现第三方客户端消费 API |
+| TokenCodec 端口 | 目前只有一种 token 方案（YAGNI） | 出现第二种方案（如 §6.2 ④ 吊销/设备绑定） |
+| 横切框架（限速/指标/审计统一框架） | FastAPI 中间件逐个挂即可 | 横切需求 > 3 个且逻辑交叉 |
+| feature-first 重组 | 当前用例域少，layer-first 更清晰 | 用例域 > 6 或需按 feature 裁剪/发布 |
+| 插件化工具加载（动态发现） | 静态注册表已满足 14 工具与未来自定义 | 需要第三方工具包 |

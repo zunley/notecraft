@@ -10,9 +10,15 @@
 | SessionArchive    | FsSessionArchive（data/ 卷） | 客户端加密上传或仅客户端留存（§7）|
 
 core 只 import 本模块；adapters 实现本模块；由 main.py 注入装配。
+契约类型见 types.py；失败语义见 errors.py（core 抛出，api 统一翻译）。
 """
 
-from typing import Protocol
+from typing import AsyncIterator, Protocol
+
+from .types import ChatRecord, Manifest, StoredFile
+
+# 流式响应：OpenAI 兼容透传的字节流（SSE）
+Stream = AsyncIterator[bytes]
 
 
 class Credentials(Protocol):
@@ -22,23 +28,26 @@ class Credentials(Protocol):
 
 
 class NoteStore(Protocol):
-    """服务端同步副本；subject = token sub，命名空间 <subject>/。
+    """服务端同步副本；subject = token sub，命名空间 <subject>/。"""
 
-    TODO: 精确返回类型改用 Manifest 等模型（上移到本模块，api 与 core 共用）。
-    """
+    def manifest(self, subject: str) -> Manifest: ...
+    def read(self, subject: str, path: str) -> StoredFile | None: ...
 
-    def manifest(self, subject: str) -> dict: ...
-    def read(self, subject: str, path: str) -> dict | None: ...
-    def write(self, subject: str, path: str, content: str, base_hash: str) -> dict: ...
+    def write(self, subject: str, path: str, content: str, base_hash: str) -> StoredFile:
+        """乐观锁：base_hash 不符时抛 errors.ConflictError。"""
+        ...
 
 
 class LlmGateway(Protocol):
-    """OpenAI 兼容网关注入点：key 只存在于实现内部，经 core 之外永不下传。"""
+    """OpenAI 兼容网关注入点：key 只存在于实现内部，经 core 之外永不下传。
 
-    def stream(self, bearer: str, payload: dict): ...  # TODO: 流式响应类型（httpx 流封装）
+    payload 为透传体（不增删字段）；超时/重试/上游错误形状收敛在实现内。
+    """
+
+    def stream(self, payload: dict) -> Stream: ...
 
 
 class SessionArchive(Protocol):
     """会话归档介质；★ 无任何对外读取 API（D6）。"""
 
-    def append(self, subject: str, conversation_id: str, record: dict) -> None: ...
+    def append(self, subject: str, record: ChatRecord) -> None: ...

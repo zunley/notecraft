@@ -5,11 +5,11 @@
 
 # Node
 node_modules/
-src/web/dist/
+src/client/web/dist/
 *.tsbuildinfo
 
 # Tauri / Rust
-src/tauri/target/
+src/client/tauri/target/
 
 # 运行时数据（笔记本副本与应用数据不入库）
 notes/

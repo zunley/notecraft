@@ -1,7 +1,7 @@
 //! notecraft Rust 壳（Tauri 2）。
 //!
 //! 职责：目录选择、文件系统、托盘、自动更新等原生能力（DESIGN-V2 §3.1）。
-//! UI 六端共用 src/web，本壳不含业务逻辑。
+//! UI 六端共用 client/web，本壳不含业务逻辑。
 //!
 //! TODO:
 //! - 注册 tauri-plugin-fs / tauri-plugin-updater / dialog

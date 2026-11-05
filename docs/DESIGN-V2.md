@@ -29,6 +29,8 @@
   同时满足「Agent 在客户端」与「key 不出服务端」。
 - R3（第二轮）：认证从单口令升级为 **username + password**，token 携带身份，预留多用户中间件与 per-user 加密沙盒（D7）。
 - R4（第二轮）：E2E 加密（同步 + 消息）确认为第二阶段目标，本期只留接口缝（D8，见 §7）。
+- R5（落地）：仓库结构按 `src/client/`（web + tauri）与 `src/server/` 划分；服务端内部分层为
+  `api/`（HTTP 薄壳）+ `core/`（用例）+ `ports.py`（接口接缝）+ `adapters/`（实现）——见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
 ---
 
@@ -212,6 +214,9 @@ src/api/app/
 ```
 
 > v1 的 `agent.py`、`mcp_server.py`、`search.py` 随 Agent 前移删除（MCP 若保留才需要 search）。
+>
+> **落地修订（R5）**：实际仓库按职责拆为 `api/`（HTTP 薄壳）+ `core/`（用例）+ `ports.py`（接口）+ `adapters/`（实现）四层，
+> 上述模块按此归位，依赖单向可替换——见 [ARCHITECTURE.md](ARCHITECTURE.md) §4。
 
 ### 4.4 会话归档（D6 落地）
 
@@ -365,6 +370,9 @@ services:
 ---
 
 ## 9. 新仓库目录结构建议
+
+> **落地修订（R5）**：实际结构按客户端/服务端划分为 `src/client/`（web + tauri）与 `src/server/`，
+> 本节的 `src/api`、`src/web`、`src/tauri` 对应移入其下——以 [ARCHITECTURE.md](ARCHITECTURE.md) §2 为准。
 
 ```
 note.md/

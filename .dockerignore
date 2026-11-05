@@ -2,9 +2,9 @@
 .github
 .venv
 node_modules
-src/web/dist
-src/web/node_modules
-src/tauri/target
+src/client/web/dist
+src/client/web/node_modules
+src/client/tauri/target
 docs
 notes
 data

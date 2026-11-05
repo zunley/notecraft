@@ -4,7 +4,13 @@
  *
  * ★ 本地永远是明文（文件即真相）：加密只发生在同步编解码边界
  *   （sync/codec → crypto/envelope），不在本层（DESIGN.md §6.4）。
+ * ★ ConflictError 定义在 lib/errors.ts（领域错误单源），此处再导出
+ *   以保持 StorageAdapter 契约的就近可见。
  */
+
+import { ConflictError } from "../lib/errors";
+
+export { ConflictError };
 
 export interface Entry {
   path: string;
@@ -14,12 +20,7 @@ export interface Entry {
   size?: number;
 }
 
-/** 冲突错误：writeFile 时 base_hash 与当前不符（乐观锁） */
-export class ConflictError extends Error {
-  constructor(public readonly path: string) {
-    super(`conflict: ${path}`);
-  }
-}
+/** 冲突错误：writeFile 时 base_hash 与当前不符（乐观锁）——已上移至 lib/errors.ts */
 
 export interface StorageAdapter {
   readDir(path: string): Promise<Entry[]>;

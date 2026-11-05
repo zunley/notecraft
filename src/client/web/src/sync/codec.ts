@@ -23,6 +23,7 @@ export async function decodeContent(wire: string): Promise<string> {
 
 /** 传输字节的哈希（sha256）——本地与服务端必须同源此定义 */
 export async function hashWire(wire: string): Promise<string> {
-  // TODO: WebCrypto sha256
+  // TODO: WebCrypto sha256（阶段 5 接入 codec）
+  void wire;
   throw new Error("hashWire 尚未实现（骨架阶段）");
 }

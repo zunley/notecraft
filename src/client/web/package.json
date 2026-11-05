@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "lint:deps": "depcruise src"
   },
   "dependencies": {
     "@assistant-ui/react": "^0.15",
@@ -35,6 +36,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4",
+    "dependency-cruiser": "^16",
     "typescript": "^5.6",
     "vite": "^6"
   }

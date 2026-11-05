@@ -1,6 +1,975 @@
 /*
- * 设计 tokens 与全局样式（方案四 · 轻新粗野）。
+ * 设计 tokens 与全局样式 —— 方案四 · 轻新粗野（docs/style/ 定稿）。
  *
- * TODO: 从 v1 迁移 src/web/src/theme.css（572 行 tokens + 样式）：
- * --bg / --tx / --blue / --orange / --lime ...，见 docs/style/README.md。
+ * 纸白 + 电蓝/柠檬：粗黑标题、2px 硬边 + 偏移阴影。
+ * 字体经 fontsource 随包离线引入（main.tsx），此处只引用族名。
+ *
+ * 分工：本文件只做「token + 全局/通用类」；组件专属样式随功能阶段追加在文末分节中。
+ * 响应式两档（DESIGN.md §3.5）：桌面双栏 / 移动单栏（侧滑抽屉 + 全屏 AI sheet）。
  */
+
+:root {
+  /* palette */
+  --bg: #faf8f2;
+  --panel: #f2efe6;
+  --card: #fffdf7;
+  --tx: #1a1a1a;
+  --tx-2: #7a776c;
+  --tx-3: #b2ae9f;
+  --line: #dad5c4;
+  --blue: #2e5cff;
+  --orange: #e8912d;
+  --lime: #dcf277;
+  --danger: #e04b3a;
+
+  /* type */
+  --font: "Space Grotesk", "Noto Sans SC", -apple-system, "PingFang SC", sans-serif;
+  --mono: "JetBrains Mono", "Noto Sans SC", monospace;
+
+  /* shape：2px 硬边 + 偏移阴影 */
+  --bd: 2px solid var(--tx);
+  --shadow: 4px 4px 0 var(--panel);
+  --shadow-lg: 8px 8px 0 var(--panel);
+
+  /* layout */
+  --topbar-h: 54px;
+  --statusbar-h: 30px;
+  --sidebar-w: 262px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 15px;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--tx);
+  height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  font-family: var(--font);
+  cursor: pointer;
+}
+
+input,
+textarea {
+  font-family: var(--font);
+}
+
+/* ── 通用按钮（nb-btn = neo-brutal button）─────────────────── */
+.nb-btn {
+  border: var(--bd);
+  background: var(--card);
+  color: var(--tx);
+  border-radius: 8px;
+  padding: 6px 13px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: 0.12s;
+}
+.nb-btn:hover {
+  background: var(--lime);
+}
+.nb-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.nb-btn kbd {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--tx-2);
+  margin-left: 6px;
+}
+.nb-btn.solid {
+  background: var(--tx);
+  color: var(--bg);
+}
+.nb-btn.solid:hover {
+  background: var(--blue);
+  color: #fff;
+}
+.nb-btn.danger:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* ── 应用骨架 ─────────────────────────────────────────────── */
+.app {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.topbar {
+  height: var(--topbar-h);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px;
+  border-bottom: var(--bd);
+  background: var(--bg);
+}
+.topbar .brand {
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+.topbar .brand em {
+  font-style: normal;
+  color: var(--blue);
+}
+.topbar .path {
+  color: var(--tx-2);
+  font-size: 0.82rem;
+  font-family: var(--mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.topbar .path b {
+  color: var(--tx);
+  font-weight: 500;
+}
+.topbar .spacer {
+  flex: 1;
+}
+
+.layout {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* ── 侧栏（文件树）─────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: var(--bd);
+  padding: 18px 10px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.tree {
+  list-style: none;
+  font-size: 0.885rem;
+  font-weight: 500;
+  flex: 1;
+}
+.tree .dir {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.tree .dir .caret {
+  color: var(--blue);
+  font-size: 0.72rem;
+}
+.tree .dir .name {
+  font-family: var(--mono);
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tree .dir .plus {
+  margin-left: auto;
+  opacity: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: var(--bd);
+  background: var(--lime);
+  color: var(--tx);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  transition: 0.12s;
+}
+.tree .dir:hover .plus {
+  opacity: 1;
+}
+.tree ul {
+  list-style: none;
+  margin-left: 18px;
+}
+.tree .file {
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--tx-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tree .file:hover {
+  color: var(--tx);
+  background: #e9e4d4;
+}
+.tree .file.active {
+  background: var(--blue);
+  color: #fff;
+  font-weight: 600;
+}
+.tree .file .del {
+  margin-left: auto;
+  opacity: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 0.8rem;
+}
+.tree .file:hover .del {
+  opacity: 0.7;
+}
+.tree .empty {
+  color: var(--tx-3);
+  font-size: 0.8rem;
+  padding: 8px 10px;
+}
+.new-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 7px 4px;
+  padding: 5px 10px;
+  background: var(--card);
+  border: 2px solid var(--blue);
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+.new-row .target {
+  color: var(--tx-2);
+}
+.new-row input {
+  border: none;
+  outline: none;
+  background: none;
+  width: 110px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--tx);
+}
+.new-row .hint {
+  margin-left: auto;
+  color: var(--tx-3);
+  font-size: 0.64rem;
+}
+.sidebar-actions {
+  display: flex;
+  gap: 8px;
+  margin: 16px 8px 0;
+}
+.sidebar-actions .nb-btn {
+  flex: 1;
+  text-align: center;
+}
+
+/* ── 编辑器 ───────────────────────────────────────────────── */
+.editor-wrap {
+  flex: 1;
+  overflow: auto;
+  padding: 44px 40px 80px;
+  min-width: 0;
+}
+.paper {
+  max-width: 780px;
+  margin: 0 auto;
+  background: var(--card);
+  border: var(--bd);
+  border-radius: 12px;
+  padding: 44px 52px 60px;
+  box-shadow: 6px 6px 0 var(--panel);
+  min-height: calc(100vh - var(--topbar-h) - 150px);
+}
+.doc-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  font-family: var(--mono);
+  background: var(--lime);
+  color: var(--tx);
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 24px;
+  font-weight: 500;
+}
+.doc-status.saving {
+  background: var(--orange);
+  color: #fff;
+}
+.doc-status.conflict {
+  background: var(--danger);
+  color: #fff;
+}
+.doc-meta {
+  color: var(--tx-3);
+  font-size: 0.8rem;
+  font-family: var(--mono);
+  margin-bottom: 28px;
+}
+.empty-editor {
+  color: var(--tx-3);
+  text-align: center;
+  padding-top: 18vh;
+  font-size: 0.95rem;
+  line-height: 2;
+}
+.empty-editor .big {
+  font-size: 2rem;
+}
+
+/* CodeMirror 编辑态 */
+.cm-editor {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  background: none;
+}
+.cm-editor .cm-content {
+  caret-color: var(--blue);
+}
+.cm-editor.cm-focused {
+  outline: none;
+}
+.cm-editor .cm-cursor {
+  border-left-color: var(--blue);
+}
+.cm-editor .cm-selectionBackground,
+.cm-editor.cm-focused .cm-selectionBackground {
+  background: color-mix(in srgb, var(--blue) 22%, transparent) !important;
+}
+.cm-gutters {
+  background: none;
+  border-right: 1px solid var(--line);
+  color: var(--tx-3);
+}
+
+/* ── Markdown 预览（分栏/渲染共用）──────────────────────────── */
+.md {
+  line-height: 1.92;
+  font-size: 0.95rem;
+}
+.md h1 {
+  font-family: "Noto Sans SC", var(--font);
+  font-weight: 900;
+  font-size: 2rem;
+  letter-spacing: -0.01em;
+  line-height: 1.32;
+  margin: 10px 0 12px;
+}
+.md h2 {
+  font-family: "Noto Sans SC", var(--font);
+  font-size: 1.22rem;
+  font-weight: 700;
+  margin: 34px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.md h2::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  background: var(--orange);
+  border: var(--bd);
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.md h3 {
+  font-family: "Noto Sans SC", var(--font);
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin: 24px 0 10px;
+}
+.md p {
+  margin: 12px 0;
+  color: #2a2a28;
+}
+.md a {
+  color: var(--blue);
+  text-decoration: none;
+  border-bottom: 2px solid var(--blue);
+  cursor: pointer;
+}
+.md code {
+  font-family: var(--mono);
+  font-size: 0.83em;
+  background: var(--lime);
+  padding: 2px 8px;
+  border-radius: 5px;
+  color: var(--tx);
+  font-weight: 500;
+}
+.md ul,
+.md ol {
+  margin: 14px 0;
+  padding-left: 1.6em;
+}
+.md li {
+  line-height: 1.85;
+  margin: 4px 0;
+}
+.md blockquote {
+  margin: 20px 0;
+  padding: 16px 22px;
+  border: var(--bd);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 4px 4px 0 var(--lime);
+}
+.md blockquote p {
+  color: var(--tx);
+  margin: 6px 0;
+}
+.md pre {
+  background: #23221e;
+  border: var(--bd);
+  border-radius: 10px;
+  padding: 16px 20px;
+  overflow: auto;
+  margin: 18px 0;
+}
+.md pre code {
+  background: none;
+  padding: 0;
+  color: #e8e3d2;
+  font-size: 0.83rem;
+  line-height: 1.75;
+}
+.md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0;
+  font-size: 0.88rem;
+}
+.md th,
+.md td {
+  text-align: left;
+  padding: 10px 12px;
+  border: var(--bd);
+}
+.md th {
+  background: var(--panel);
+  font-weight: 700;
+  font-size: 0.76rem;
+}
+.md img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+.md hr {
+  border: none;
+  border-top: var(--bd);
+  margin: 26px 0;
+}
+
+/* ── AI 悬浮面板 ──────────────────────────────────────────── */
+.fab {
+  position: fixed;
+  right: 30px;
+  bottom: 46px;
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: var(--blue);
+  color: #fff;
+  border: var(--bd);
+  font-size: 1.35rem;
+  box-shadow: 4px 4px 0 var(--tx);
+  transition: 0.12s;
+  z-index: 30;
+}
+.fab:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--tx);
+}
+.ai-panel {
+  position: fixed;
+  right: 26px;
+  bottom: 26px;
+  width: 380px;
+  height: min(560px, calc(100vh - 100px));
+  background: var(--card);
+  border: var(--bd);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 31;
+}
+.ai-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  border-bottom: var(--bd);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.ai-head .badge {
+  background: var(--lime);
+  border: var(--bd);
+  border-radius: 20px;
+  font-size: 0.68rem;
+  padding: 2px 10px;
+  font-family: var(--mono);
+  font-weight: 500;
+}
+.ai-head .badge.off {
+  background: var(--panel);
+  color: var(--tx-2);
+}
+.ai-head .x {
+  margin-left: auto;
+  cursor: pointer;
+  color: var(--tx-2);
+  font-size: 1.1rem;
+  background: none;
+  border: none;
+}
+.ai-body {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  font-size: 0.86rem;
+  line-height: 1.8;
+}
+.msg-user {
+  background: var(--blue);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 12px 12px 3px 12px;
+  margin: 10px 0 14px auto;
+  max-width: 86%;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.msg-ai {
+  color: #2a2a28;
+  margin: 4px 0 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.msg-sys {
+  color: var(--tx-3);
+  font-size: 0.76rem;
+  font-family: var(--mono);
+  text-align: center;
+  margin: 8px 0;
+}
+.tool-card {
+  border: var(--bd);
+  border-radius: 9px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  background: var(--panel);
+  word-break: break-all;
+}
+.tool-card .tag {
+  display: inline-block;
+  background: var(--orange);
+  color: #fff;
+  border: var(--bd);
+  border-radius: 5px;
+  padding: 0 7px;
+  font-size: 0.66rem;
+  margin-right: 8px;
+  font-weight: 700;
+}
+.tool-card .tag.read {
+  background: var(--blue);
+}
+.tool-card .link {
+  color: var(--blue);
+}
+.ai-input {
+  border-top: var(--bd);
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+}
+.ai-input textarea {
+  flex: 1;
+  border: var(--bd);
+  border-radius: 9px;
+  padding: 9px 13px;
+  font-size: 0.85rem;
+  outline: none;
+  background: var(--bg);
+  resize: none;
+  height: 40px;
+  line-height: 1.4;
+}
+.ai-input textarea:focus {
+  border-color: var(--blue);
+}
+.ai-input button {
+  border: var(--bd);
+  background: var(--lime);
+  border-radius: 9px;
+  padding: 0 16px;
+  font-weight: 700;
+}
+.ai-input button:hover {
+  background: var(--blue);
+  color: #fff;
+}
+/* write-gate 确认条 */
+.gate-bar {
+  border-top: var(--bd);
+  background: var(--panel);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+}
+.gate-bar .desc {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gate-bar .nb-btn {
+  padding: 4px 10px;
+  font-size: 0.74rem;
+}
+
+/* ── 状态栏 ───────────────────────────────────────────────── */
+.statusbar {
+  height: var(--statusbar-h);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  border-top: var(--bd);
+  background: var(--panel);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--tx-2);
+}
+.statusbar .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tx-3);
+  display: inline-block;
+}
+.statusbar .dot.ok {
+  background: #5fbf57;
+}
+.statusbar .dot.busy {
+  background: var(--orange);
+}
+.statusbar .dot.off {
+  background: var(--danger);
+}
+.statusbar .spacer {
+  flex: 1;
+}
+.statusbar button {
+  border: none;
+  background: none;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--blue);
+  font-weight: 600;
+}
+
+/* ── 登录 ─────────────────────────────────────────────────── */
+.login-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel);
+  padding: 24px;
+  overflow: auto;
+}
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--card);
+  border: var(--bd);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  padding: 34px 36px;
+}
+.login-card h1 {
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+.login-card h1 em {
+  font-style: normal;
+  color: var(--blue);
+}
+.login-card .sub {
+  color: var(--tx-2);
+  font-size: 0.84rem;
+  margin-bottom: 22px;
+  line-height: 1.7;
+}
+.login-card label {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 700;
+  margin: 14px 0 6px;
+}
+.login-card input {
+  width: 100%;
+  border: var(--bd);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  background: var(--bg);
+  outline: none;
+}
+.login-card input:focus {
+  border-color: var(--blue);
+}
+.login-card .err {
+  color: var(--danger);
+  font-size: 0.8rem;
+  margin-top: 12px;
+  line-height: 1.6;
+}
+.login-card .actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+.login-card .actions .nb-btn {
+  flex: 1;
+  padding: 10px;
+  font-size: 0.88rem;
+}
+.login-card .switch {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--tx-2);
+}
+.login-card .switch a {
+  color: var(--blue);
+  cursor: pointer;
+  font-weight: 600;
+}
+.login-card .server-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+  align-items: center;
+}
+.login-card .server-row span {
+  font-size: 0.72rem;
+  color: var(--tx-3);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+.login-card .server-row input {
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  padding: 6px 10px;
+}
+.rek-note {
+  border: var(--bd);
+  background: var(--lime);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 0.8rem;
+  line-height: 1.7;
+  margin-top: 16px;
+}
+.rek-note b {
+  font-weight: 700;
+}
+
+/* ── 命令面板（⌘K）─────────────────────────────────────────── */
+.palette-mask {
+  position: fixed;
+  inset: 0;
+  background: rgb(26 26 26 / 30%);
+  display: flex;
+  justify-content: center;
+  padding-top: 14vh;
+  z-index: 40;
+}
+.palette {
+  width: min(620px, 92vw);
+  height: fit-content;
+  max-height: 60vh;
+  background: var(--card);
+  border: var(--bd);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.palette input {
+  border: none;
+  border-bottom: var(--bd);
+  padding: 15px 18px;
+  font-size: 1rem;
+  outline: none;
+  background: none;
+}
+.palette ul {
+  list-style: none;
+  overflow: auto;
+  padding: 6px;
+}
+.palette li {
+  padding: 9px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.86rem;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+.palette li .sub {
+  color: var(--tx-3);
+  font-size: 0.72rem;
+  font-family: var(--mono);
+  margin-left: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 55%;
+}
+.palette li mark {
+  background: var(--lime);
+  color: inherit;
+}
+.palette li.active,
+.palette li:hover {
+  background: var(--blue);
+  color: #fff;
+}
+.palette li.active .sub,
+.palette li:hover .sub {
+  color: #ffffffaa;
+}
+.palette .none {
+  padding: 18px;
+  color: var(--tx-3);
+  font-size: 0.84rem;
+  text-align: center;
+}
+
+/* ── 移动单栏（M5：抽屉 + 全屏 sheet）──────────────────────── */
+.drawer-mask {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    padding: 0 12px;
+    gap: 8px;
+  }
+  .topbar .path {
+    display: none;
+  }
+  /* 侧栏变侧滑抽屉 */
+  .sidebar {
+    position: fixed;
+    top: var(--topbar-h);
+    bottom: var(--statusbar-h);
+    left: 0;
+    width: min(82vw, 300px);
+    transform: translateX(-105%);
+    transition: transform 0.18s ease;
+    z-index: 25;
+    box-shadow: 8px 0 0 rgb(26 26 26 / 8%);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .drawer-mask.show {
+    display: block;
+    position: fixed;
+    inset: var(--topbar-h) 0 var(--statusbar-h);
+    background: rgb(26 26 26 / 35%);
+    z-index: 24;
+  }
+  .editor-wrap {
+    padding: 16px 12px 60px;
+  }
+  .paper {
+    padding: 26px 20px 44px;
+    border-radius: 10px;
+    box-shadow: 4px 4px 0 var(--panel);
+  }
+  /* AI 面板全屏 sheet */
+  .ai-panel {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    border: none;
+    z-index: 50;
+  }
+  .fab {
+    right: 18px;
+    bottom: 44px;
+  }
+  /* 触控目标 ≥44px */
+  .nb-btn,
+  .ai-input button,
+  .tree .file,
+  .tree .dir {
+    min-height: 44px;
+  }
+  .tree .file,
+  .tree .dir {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .statusbar {
+    font-size: 0.64rem;
+    gap: 10px;
+    padding: 0 10px;
+  }
+  .login-card {
+    padding: 26px 22px;
+  }
+}

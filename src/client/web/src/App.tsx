@@ -9,7 +9,7 @@
  * - 登录门（Login）——可关，本地存储始终可用（本地优先：登录只为解锁/同步/AI）。
  */
 import { useEffect, useRef, useState } from "react";
-import { Chat, Editor, FileTree, Login, StatusBar } from "./features";
+import { Chat, CommandPalette, Editor, FileTree, Login, StatusBar } from "./features";
 import { createStorage } from "./storage";
 import { SyncEngine } from "./sync";
 import { useAuthStore, useNotesStore, useSyncStore, type ViewMode } from "./state";
@@ -25,6 +25,7 @@ export function App() {
   const [bootError, setBootError] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   const currentPath = useNotesStore((s) => s.currentPath);
   const viewMode = useNotesStore((s) => s.viewMode);
@@ -54,10 +55,11 @@ export function App() {
         window.dispatchEvent(new CustomEvent("notecraft:save")); // Editor 立即落盘
       } else if (mod && key === "k") {
         e.preventDefault();
-        window.dispatchEvent(new CustomEvent("notecraft:palette")); // ⌘K 搜索面板
+        setPaletteOpen((v) => !v); // ⌘K 搜索面板
       } else if (e.key === "Escape") {
         setChatOpen(false);
         setDrawerOpen(false);
+        setPaletteOpen(false);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -136,7 +138,7 @@ export function App() {
         </div>
         <div className="path">{currentPath ?? "本地笔记本"}</div>
         <div className="spacer" />
-        <button className="nb-btn search-btn" disabled title="搜索（⌘K，阶段 8 / M6 接入）">
+        <button className="nb-btn search-btn" onClick={() => setPaletteOpen(true)} title="搜索（⌘K）">
           搜索<kbd>⌘K</kbd>
         </button>
         <div style={{ display: "flex", gap: 6 }}>
@@ -175,6 +177,7 @@ export function App() {
       )}
       {/* 登录门（阶段 3 / M1-c）：登录即解锁；本地功能不被阻塞（本地优先） */}
       {needGate && <Login />}
+      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
     </div>
   );
 }

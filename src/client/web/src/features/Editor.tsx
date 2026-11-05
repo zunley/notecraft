@@ -8,6 +8,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+import { autocompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { markdown } from "@codemirror/lang-markdown";
 import { bracketMatching, defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { EditorView, drawSelection, keymap } from "@codemirror/view";
@@ -16,6 +17,19 @@ import { resolveWikiPath } from "../lib/search";
 import { flatFiles, useNotesStore } from "../state/notes";
 
 const SAVE_DEBOUNCE_MS = 800; // 本地保存防抖（同步推送防抖 ~2s 另在 engine）
+
+/** 内链补全：`[[` 后列出全部笔记路径（与 ⌘K 同源 tree，M6 打磨项） */
+function wikiCompletion(ctx: CompletionContext): CompletionResult | null {
+  const match = ctx.matchBefore(/\[\[[^\]\n]*/);
+  if (!match && !ctx.explicit) return null;
+  const from = match ? match.from + 2 : ctx.pos;
+  const files = flatFiles(useNotesStore.getState().tree);
+  return {
+    from,
+    options: files.map((f) => ({ label: f, detail: "笔记" })),
+    validFor: /^[\w\u4e00-\u9fa5./-]*$/,
+  };
+}
 
 export function Editor() {
   const currentPath = useNotesStore((s) => s.currentPath);
@@ -46,6 +60,7 @@ export function Editor() {
         bracketMatching(),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         markdown(),
+        autocompletion({ override: [wikiCompletion] }),
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
         EditorView.updateListener.of((update) => {
           if (!update.docChanged) return;

@@ -1,6 +1,9 @@
 /**
  * 客户端 Agent 运行时（assistant-ui LocalRuntime + 前端工具循环）。
  *
+ * ★ Agent 从第一阶段起就完整在前端运行：服务端 /api/ai/v1/* 只是透明转发 LLM，
+ *   不组装 prompt、不执行工具、不持会话状态；工具全部打本地 StorageAdapter。
+ *
  * TODO:
  * - 组装完整 messages + tools 数组（+ conversation_id）发往 LlmTransport
  * - 工具循环在前端执行：调用 → 结果回填 → 继续，直至模型收口

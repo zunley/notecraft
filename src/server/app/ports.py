@@ -15,7 +15,7 @@ core 只 import 本模块；adapters 实现本模块；由 main.py 注入装配�
 
 from typing import AsyncIterator, Protocol
 
-from .types import ChatRecord, Manifest, StoredFile
+from .types import Manifest, RelayRecord, StoredFile
 
 # 流式响应：OpenAI 兼容透传的字节流（SSE）
 Stream = AsyncIterator[bytes]
@@ -48,6 +48,6 @@ class LlmGateway(Protocol):
 
 
 class SessionArchive(Protocol):
-    """会话归档介质；★ 无任何对外读取 API（D6）。"""
+    """透传归档介质（转发日志性质）；★ 无任何对外读取 API（D6）。"""
 
-    def append(self, subject: str, record: ChatRecord) -> None: ...
+    def append(self, subject: str, record: RelayRecord) -> None: ...

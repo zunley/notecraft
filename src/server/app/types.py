@@ -38,8 +38,8 @@ class Token:
 
 
 @dataclass(frozen=True)
-class ChatRecord:
-    """会话归档记录（粒度见 DESIGN-V2 未决项 3）。"""
+class RelayRecord:
+    """透传归档记录（转发的副产品，★ 不是会话存储：服务端不理解、不编排对话）。"""
 
     conversation_id: str
     messages: list[dict]  # TODO: 需要收紧时再换具体模型

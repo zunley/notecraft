@@ -37,6 +37,11 @@
 2. **key 永不下发客户端**——Agent 在客户端，但 LLM 请求经服务端中继（OpenAI 兼容透传）。
 3. **会话仅服务端归档**——客户端不请求、不展示、不落任何会话历史；归档无对外 API。
 
+**Agent 位置（无歧义版）**：AI Agent **从第一阶段起就完整运行在客户端**——工具循环、14 个文件工具、
+prompt 组装、write-gate、对话上下文管理全在前端；服务端 `/api/ai/v1/*` **自始至终只是透明转发**
+（注入 key + 流式透传 + 归档副产品），不组装 prompt、不执行工具、不持会话状态。
+不存在「服务端 Agent 阶段」；二期的变化只是 LLM 流量直连网关（DirectTransport），Agent 位置不变。
+
 ## 2. 仓库结构
 
 ```
@@ -163,7 +168,7 @@ notecraft/
 | `GET` | `/api/sync/manifest` | `{rev, files:[{path, hash, mtime, size}]}` |
 | `GET` | `/api/sync/file?path=` | `{content, hash, mtime}` |
 | `PUT` | `/api/sync/file` | `{path, content, base_hash}`；hash 不符 → 409 |
-| `POST` | `/api/ai/v1/chat/completions` | LLM 中继：OpenAI 兼容，Bearer 用户 token，服务端注入 key 后透传（含流式），同时归档对话 |
+| `POST` | `/api/ai/v1/chat/completions` | LLM **纯转发**：OpenAI 兼容，Bearer 用户 token，注入 key 后透传（含流式），同时归档透传记录。不组装 prompt、不执行工具、不持会话状态 |
 | `GET` | `/health` | 免鉴权 |
 
 - 除 `/health` 外全部过 `require_user`（`api/deps.py`：验签 → 解 `sub` → 挂上下文）——**后期多用户的唯一切换点**。
@@ -200,6 +205,10 @@ login 双字段 → `core.auth` 经 Credentials 校验 → HMAC-SHA256 token（p
 已知泄露面（二期处理）：文件路径明文、manifest 的 mtime/size 旁路信息。
 
 ## 9. 里程碑（出口标准详见 DESIGN-V2 §10）
+
+> 注：M2 的「Agent 前移」是 DESIGN-V2 相对 v1 的迁移措辞（v1 的 agent.py 在服务端）。
+> **本仓库从第一阶段（M1）起 Agent 就在客户端实现**，不存在服务端 Agent 阶段；
+> M2 的服务端部分只是把转发接口建起来（/api/ai/v1/*）。
 
 | # | 名称 | 出口标准 |
 |---|------|----------|

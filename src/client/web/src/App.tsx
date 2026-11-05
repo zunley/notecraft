@@ -5,6 +5,7 @@
  * - 同步引擎（sync/engine）在存储就绪后装配：防抖推送、前后台对齐、投影写入 state/sync；
  * - 顶栏：品牌、当前路径、视图切换（编辑/分栏/预览）、搜索（⌘K，阶段 8）、移动端抽屉开关；
  * - 状态栏：同步投影 + 立即同步 + 账户（改口令/注销/退出）；AI 悬浮窗（工具循环）；
+ * - 快捷键平台归一（⌘/Ctrl 等价，DESIGN §3.5）：⌘J AI 面板、⌘S 落盘、⌘K 搜索、Esc 关闭；
  * - 登录门（Login）——可关，本地存储始终可用（本地优先：登录只为解锁/同步/AI）。
  */
 import { useEffect, useRef, useState } from "react";
@@ -39,6 +40,29 @@ export function App() {
   const needGate = (hasToken && !unlocked) || (!hasToken && !guest);
 
   const engineRef = useRef<SyncEngine | null>(null);
+
+  // 全局快捷键（⌘/Ctrl 平台归一；移动端由等价按钮提供，DESIGN §3.5）
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      const key = e.key.toLowerCase();
+      if (mod && key === "j") {
+        e.preventDefault();
+        setChatOpen((v) => !v);
+      } else if (mod && key === "s") {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent("notecraft:save")); // Editor 立即落盘
+      } else if (mod && key === "k") {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent("notecraft:palette")); // ⌘K 搜索面板
+      } else if (e.key === "Escape") {
+        setChatOpen(false);
+        setDrawerOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // 启动：注入平台存储 + 认证状态 + 离线/在线投影（DESIGN.md §3.6 静默降级）
   useEffect(() => {
@@ -112,7 +136,7 @@ export function App() {
         </div>
         <div className="path">{currentPath ?? "本地笔记本"}</div>
         <div className="spacer" />
-        <button className="nb-btn" disabled title="搜索（阶段 8 / M6 接入）">
+        <button className="nb-btn search-btn" disabled title="搜索（⌘K，阶段 8 / M6 接入）">
           搜索<kbd>⌘K</kbd>
         </button>
         <div style={{ display: "flex", gap: 6 }}>

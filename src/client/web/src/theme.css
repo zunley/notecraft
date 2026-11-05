@@ -35,6 +35,9 @@
   --topbar-h: 54px;
   --statusbar-h: 30px;
   --sidebar-w: 262px;
+  /* 刘海屏安全区（DESIGN §3.5 移动端） */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 * {
@@ -118,7 +121,8 @@ textarea {
 }
 
 .topbar {
-  height: var(--topbar-h);
+  height: calc(var(--topbar-h) + var(--safe-top));
+  padding-top: var(--safe-top);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -672,7 +676,8 @@ textarea {
 
 /* ── 状态栏 ───────────────────────────────────────────────── */
 .statusbar {
-  height: var(--statusbar-h);
+  height: calc(var(--statusbar-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -955,8 +960,8 @@ textarea {
   /* 侧栏变侧滑抽屉 */
   .sidebar {
     position: fixed;
-    top: var(--topbar-h);
-    bottom: var(--statusbar-h);
+    top: calc(var(--topbar-h) + var(--safe-top));
+    bottom: calc(var(--statusbar-h) + var(--safe-bottom));
     left: 0;
     width: min(82vw, 300px);
     transform: translateX(-105%);
@@ -970,7 +975,7 @@ textarea {
   .drawer-mask.show {
     display: block;
     position: fixed;
-    inset: var(--topbar-h) 0 var(--statusbar-h);
+    inset: calc(var(--topbar-h) + var(--safe-top)) 0 calc(var(--statusbar-h) + var(--safe-bottom));
     background: rgb(26 26 26 / 35%);
     z-index: 24;
   }
@@ -993,7 +998,7 @@ textarea {
   }
   .fab {
     right: 18px;
-    bottom: 44px;
+    bottom: calc(44px + var(--safe-bottom));
   }
   /* 触控目标 ≥44px */
   .nb-btn,
@@ -1011,6 +1016,24 @@ textarea {
     font-size: 0.64rem;
     gap: 10px;
     padding: 0 10px;
+  }
+  /* 防 iOS 聚焦自动缩放：输入字号 ≥16px */
+  .ai-input textarea,
+  .login-card input,
+  .palette input,
+  .new-row input,
+  .account-menu input {
+    font-size: 16px;
+  }
+  /* 顶栏紧凑，避免小屏溢出；⌘K 按钮在触屏无意义，隐藏 */
+  .topbar .search-btn {
+    display: none;
+  }
+  .topbar .brand {
+    font-size: 1rem;
+  }
+  .topbar .nb-btn {
+    padding: 6px 9px;
   }
   .login-card {
     padding: 26px 22px;

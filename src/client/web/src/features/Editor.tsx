@@ -30,6 +30,7 @@ export function Editor() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** 未落盘草稿及其所属路径——切换文件时兜底，防串写/防丢稿 */
   const pendingRef = useRef<{ path: string; text: string } | null>(null);
+  const draftRef = useRef(""); // ⌘S 取最新草稿用
   const [draft, setDraft] = useState("");
   const mounted = currentPath !== null;
 
@@ -50,6 +51,7 @@ export function Editor() {
           if (!update.docChanged) return;
           const text = update.state.doc.toString();
           setDraft(text);
+          draftRef.current = text;
           pendingRef.current = { path: useNotesStore.getState().currentPath ?? "", text };
           if (saveTimer.current) clearTimeout(saveTimer.current);
           saveTimer.current = setTimeout(() => {
@@ -84,6 +86,7 @@ export function Editor() {
       pendingRef.current = null;
       void useNotesStore.getState().save(pending.text);
       setDraft(pending.text);
+      draftRef.current = pending.text;
       return;
     }
     if (pending?.path && pending.path !== currentPath) {
@@ -92,12 +95,21 @@ export function Editor() {
     pendingRef.current = null;
     view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: currentContent } });
     setDraft(currentContent);
+    draftRef.current = currentContent;
   }, [currentPath, contentVersion]);
 
   const flushSave = (content: string, force = false) => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     void useNotesStore.getState().save(content, { force });
   };
+
+  // ⌘S 立即落盘（App 全局快捷键派发）
+  useEffect(() => {
+    const onSave = () => flushSave(draftRef.current);
+    window.addEventListener("notecraft:save", onSave);
+    return () => window.removeEventListener("notecraft:save", onSave);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 内链点击：不存在则新建（本地优先，零网络）
   const onPreviewClick = (e: React.MouseEvent<HTMLDivElement>) => {

@@ -51,5 +51,37 @@ class PolicyResponse(BaseModel):
     registration: str  # open | invite | closed
 
 
-# ── sync（API.md §4，阶段 5 接入）─────────────────────────────
-# ── relay（API.md §5，阶段 4 接入）────────────────────────────
+# ── sync（API.md §4）──────────────────────────────────────────
+
+
+class FilePutRequest(BaseModel):
+    path: str  # base64url(路径密文)
+    content: str  # base64url(内容密文)
+    base_hash: str  # 上次同步的密文 sha256（新建为空串）
+
+
+class ManifestFile(BaseModel):
+    path: str
+    hash: str
+    mtime: float
+    size: int
+
+
+class ManifestResponse(BaseModel):
+    protocol: int
+    rev: int
+    files: list[ManifestFile]
+
+
+class FileResponse(BaseModel):
+    content: str
+    hash: str
+    mtime: float
+
+
+class FilePutResponse(BaseModel):
+    hash: str
+    rev: int
+
+
+# ── relay（API.md §5，阶段 4 已接入，透传体不经 schemas）──────

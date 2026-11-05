@@ -37,6 +37,7 @@ from .api import api_router
 from .config import Settings, get_settings
 from .core.auth import AuthCore
 from .core.relay import RelayCore
+from .core.sync import SyncCore
 from .errors import DomainError, RateLimitError, RelayQuotaExceededError
 
 # 注册/登录限速（按 IP）的窗口
@@ -140,13 +141,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.notes = notes
     app.state.auth = AuthCore(users=users, notes=notes, settings=settings, secret=secret)
     app.state.relay = RelayCore(gateway=gateway, quota=quota, settings=settings)
-    # 阶段 5: app.state.sync = SyncCore(store=notes, settings=settings)
+    app.state.sync = SyncCore(store=notes, settings=settings)
 
     # ── 横切 + 路由 ────────────────────────────────────────────
     _install_error_handlers(app)
     _install_auth_rate_limit(app, settings)
     app.include_router(api_router)
-    # 阶段 5: sync 路由
 
     _mount_web(app)  # 静态托管最后挂（兜底路由）
     return app

@@ -39,8 +39,9 @@ def _verifier(password: str) -> str:
 
 
 class FileUserStore:
-    def __init__(self, data_dir: Path | str):
-        self.dir = Path(data_dir) / "users"
+    def __init__(self, users_dir: Path | str):
+        # 注入的已是完整目录（settings.users_dir = <data_dir>/users）
+        self.dir = Path(users_dir)
         self.by_username = self.dir / "by-username"
         self.dir.mkdir(parents=True, exist_ok=True)
         self.by_username.mkdir(parents=True, exist_ok=True)

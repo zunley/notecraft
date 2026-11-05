@@ -822,6 +822,33 @@ textarea {
   font-weight: 700;
 }
 
+/* ── 账户面板（状态栏弹出）──────────────────────────────────── */
+.account-menu {
+  position: fixed;
+  right: 12px;
+  bottom: calc(var(--statusbar-h) + 6px);
+  width: 250px;
+  background: var(--card);
+  border: var(--bd);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  padding: 14px;
+  z-index: 45;
+  font-size: 0.82rem;
+}
+.account-menu input {
+  width: 100%;
+  border: var(--bd);
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-size: 0.84rem;
+  background: var(--bg);
+  outline: none;
+}
+.account-menu .nb-btn {
+  width: 100%;
+}
+
 /* ── 登录门 ─────────────────────────────────────────────── */
 .login-gate {
   position: fixed;

@@ -132,8 +132,47 @@ export const api = {
   deleteAccount: (password: string) =>
     request<void>("/api/auth/account", { method: "DELETE", body: { password } }),
 
-  // ── sync（API.md §4）——阶段 5（M3）接入 ──
-  // syncManifest / syncGet / syncPut / syncDelete
+  // ── sync（API.md §4）────────────────────────────
+
+  /** 拉取 manifest（含 protocol 协商字段） */
+  syncManifest: () => request<ManifestWire>("/api/sync/manifest"),
+
+  /** 拉取单文件密文 */
+  syncGet: (pathCipher: string) =>
+    request<FileWire>(`/api/sync/file?path=${encodeURIComponent(pathCipher)}`),
+
+  /** 推送单文件密文（base_hash = 上次同步的密文哈希；新建为空串） */
+  syncPut: (pathCipher: string, contentCipher: string, baseHash: string) =>
+    request<PutWire>("/api/sync/file", {
+      method: "PUT",
+      body: { path: pathCipher, content: contentCipher, base_hash: baseHash },
+    }),
+
+  /** 删除（幂等 204；乐观锁 409） */
+  syncDelete: (pathCipher: string, baseHash: string) =>
+    request<void>(
+      `/api/sync/file?path=${encodeURIComponent(pathCipher)}&base_hash=${encodeURIComponent(baseHash)}`,
+      { method: "DELETE" },
+    ),
 
   // ── relay 流式转发归 ai/llmTransport.ts（本文件不碰 relay）──
 };
+
+// ── sync wire 形状（API.md §4；对应服务端 api/schemas.py）────
+
+export interface ManifestWire {
+  protocol: number;
+  rev: number;
+  files: { path: string; hash: string; mtime: number; size: number }[];
+}
+
+export interface FileWire {
+  content: string;
+  hash: string;
+  mtime: number;
+}
+
+export interface PutWire {
+  hash: string;
+  rev: number;
+}

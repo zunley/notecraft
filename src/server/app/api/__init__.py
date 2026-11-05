@@ -12,9 +12,10 @@ from fastapi import APIRouter
 from .auth import auth_router
 from .health import health_router
 from .relay import relay_router
+from .sync import sync_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router)
 api_router.include_router(health_router)
 api_router.include_router(relay_router)
-# 阶段 5 挂 sync_router（./sync.py，prefix="/api/sync"）
+api_router.include_router(sync_router)

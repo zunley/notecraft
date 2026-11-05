@@ -2,13 +2,15 @@
  * 根组件：布局骨架（桌面双栏 / 移动单栏，DESIGN.md §3.5）。
  *
  * - 启动时注入平台 StorageAdapter（storage/index 工厂，UI 零分叉）；
+ * - 同步引擎（sync/engine）在存储就绪后装配：防抖推送、前后台对齐、投影写入 state/sync；
  * - 顶栏：品牌、当前路径、视图切换（编辑/分栏/预览）、搜索（⌘K，阶段 8）、移动端抽屉开关；
- * - 状态栏订阅 sync 切片（阶段 5 接满）；AI 悬浮窗（阶段 4 接满）；
- * - 登录门（Login，阶段 3）——登录前仅提示，本地存储仍可用（本地优先：登录只为解锁/同步）。
+ * - 状态栏：同步投影 + 立即同步 + 账户（改口令/注销/退出）；AI 悬浮窗（工具循环）；
+ * - 登录门（Login）——可关，本地存储始终可用（本地优先：登录只为解锁/同步/AI）。
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Chat, Editor, FileTree, Login, StatusBar } from "./features";
 import { createStorage } from "./storage";
+import { SyncEngine } from "./sync";
 import { useAuthStore, useNotesStore, useSyncStore, type ViewMode } from "./state";
 
 const VIEW_MODES: { mode: ViewMode; label: string }[] = [
@@ -36,6 +38,8 @@ export function App() {
   // ★ 门可关（离线使用）且不阻断渲染下的本地功能——本地优先铁律
   const needGate = (hasToken && !unlocked) || (!hasToken && !guest);
 
+  const engineRef = useRef<SyncEngine | null>(null);
+
   // 启动：注入平台存储 + 认证状态 + 离线/在线投影（DESIGN.md §3.6 静默降级）
   useEffect(() => {
     let cancelled = false;
@@ -58,6 +62,27 @@ export function App() {
       window.removeEventListener("offline", onOffline);
     };
   }, [patchSync]);
+
+  // 同步引擎装配（composition in App：state 不依赖 sync，钩子由这里注入）
+  useEffect(() => {
+    if (!ready) return;
+    const engine = new SyncEngine({
+      getStorage: () => useNotesStore.getState().storage,
+      patch: (p) => useSyncStore.getState().patch(p),
+      onFileAdopted: (path) => {
+        const notes = useNotesStore.getState();
+        if (notes.currentPath === path) void notes.open(path); // 重载被覆盖的当前文件
+      },
+    });
+    engineRef.current = engine;
+    useNotesStore.setState({ onLocalChange: (path) => engine.touch(path) });
+    engine.start();
+    return () => {
+      engine.stop();
+      engineRef.current = null;
+      useNotesStore.setState({ onLocalChange: undefined });
+    };
+  }, [ready]);
 
   if (bootError) {
     return (
@@ -109,7 +134,7 @@ export function App() {
         {ready ? <Editor /> : <div className="editor-wrap"><div className="empty-editor">正在初始化本地存储…</div></div>}
       </div>
 
-      <StatusBar />
+      <StatusBar onSyncNow={() => void engineRef.current?.syncNow()} />
 
       <button className="fab" title="AI 助手" onClick={() => setChatOpen((v) => !v)}>
         ✦

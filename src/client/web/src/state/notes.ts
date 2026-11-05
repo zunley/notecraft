@@ -49,6 +49,8 @@ interface NotesState {
   error: string | null;
   /** 内容版本号：open() 自增（AI 覆写当前文件后 Editor 据此重载）；save 不自增 */
   contentVersion: number;
+  /** 本地变更钩子（App 注入同步引擎的防抖触发；state 不依赖 sync） */
+  onLocalChange?: (path: string) => void;
 
   init(storage: StorageAdapter): Promise<void>;
   refresh(): Promise<void>;
@@ -77,6 +79,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   lastSavedAt: null,
   error: null,
   contentVersion: 0,
+  onLocalChange: undefined,
 
   async init(storage) {
     set({ storage });
@@ -129,6 +132,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         } else {
           await s.storage.writeFile(path, content);
         }
+        get().onLocalChange?.(path);
       } catch {
         /* 磁盘上出现更新内容等极少数情况：放弃兜底写，避免覆盖 */
       }
@@ -149,6 +153,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         lastSavedAt: Date.now(),
         error: null,
       });
+      get().onLocalChange?.(s.currentPath);
     } catch (e) {
       if (e instanceof ConflictError) {
         set({ status: "conflict", error: "本地文件在别处被修改（冲突）" });
@@ -167,6 +172,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     }
     await s.storage.writeFile(path, content);
     await get().refresh();
+    get().onLocalChange?.(path);
     await get().open(path);
   },
 
@@ -176,6 +182,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     await s.storage.remove(path);
     if (s.currentPath === path || s.currentPath?.startsWith(`${path}/`)) get().close();
     await get().refresh();
+    get().onLocalChange?.(path);
   },
 
   async rename(from, to) {
@@ -187,6 +194,8 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       set({ currentPath: `${to}${s.currentPath.slice(from.length)}` });
     }
     await get().refresh();
+    get().onLocalChange?.(from);
+    get().onLocalChange?.(to);
   },
 
   setViewMode(mode) {

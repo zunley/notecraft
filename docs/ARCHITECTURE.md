@@ -69,7 +69,7 @@ notecraft/
 │   └── server/             # ★ 服务端（FastAPI，分层架构见 §4）
 │       ├── requirements.txt
 │       ├── tests/smoke.py
-│       └── app/
+│       └── app/            # Python 包（导入根，勿拍平：包层避免 types 等顶层名遮蔽标准库）
 │           ├── main.py     # 组装根：构造 adapters → 注入 core → 注册路由/异常翻译
 │           ├── config.py   # 环境变量配置（凭证/密钥只在 .env）
 │           ├── ports.py    # 接口契约（Protocol）——依赖倒置的接缝

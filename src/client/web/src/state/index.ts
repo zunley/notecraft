@@ -9,4 +9,4 @@
  */
 export { useNotesStore, flatFiles, type TreeNode, type ViewMode, type SaveStatus } from "./notes";
 export { useSyncStore, type SyncState } from "./sync";
-// export { useAuthStore } from "./auth"; // 阶段 3（M1-c）接入
+export { useAuthStore, type RegistrationPolicy } from "./auth";

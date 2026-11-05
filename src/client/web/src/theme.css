@@ -822,6 +822,15 @@ textarea {
   font-weight: 700;
 }
 
+/* ── 登录门 ─────────────────────────────────────────────── */
+.login-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--panel);
+  display: flex;
+}
+
 /* ── 命令面板（⌘K）─────────────────────────────────────────── */
 .palette-mask {
   position: fixed;

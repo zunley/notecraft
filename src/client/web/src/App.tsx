@@ -7,9 +7,9 @@
  * - 登录门（Login，阶段 3）——登录前仅提示，本地存储仍可用（本地优先：登录只为解锁/同步）。
  */
 import { useEffect, useState } from "react";
-import { Chat, Editor, FileTree, StatusBar } from "./features";
+import { Chat, Editor, FileTree, Login, StatusBar } from "./features";
 import { createStorage } from "./storage";
-import { useNotesStore, useSyncStore, type ViewMode } from "./state";
+import { useAuthStore, useNotesStore, useSyncStore, type ViewMode } from "./state";
 
 const VIEW_MODES: { mode: ViewMode; label: string }[] = [
   { mode: "edit", label: "编辑" },
@@ -28,10 +28,18 @@ export function App() {
   const setViewMode = useNotesStore((s) => s.setViewMode);
   const online = useSyncStore((s) => s.online);
   const patchSync = useSyncStore((s) => s.patch);
+  const hasToken = useAuthStore((s) => s.hasToken);
+  const unlocked = useAuthStore((s) => s.unlocked);
+  const guest = useAuthStore((s) => s.guest);
 
-  // 启动：注入平台存储 + 离线/在线投影（DESIGN.md §3.6 静默降级）
+  // 登录门：无 token 且未选离线使用 → 登录/创建；有 token 但 MK 不在内存 → 解锁门
+  // ★ 门可关（离线使用）且不阻断渲染下的本地功能——本地优先铁律
+  const needGate = (hasToken && !unlocked) || (!hasToken && !guest);
+
+  // 启动：注入平台存储 + 认证状态 + 离线/在线投影（DESIGN.md §3.6 静默降级）
   useEffect(() => {
     let cancelled = false;
+    void useAuthStore.getState().init();
     createStorage()
       .then((storage) => useNotesStore.getState().init(storage))
       .then(() => {
@@ -116,7 +124,8 @@ export function App() {
           离线——本地功能照常，恢复网络后自动同步
         </div>
       )}
-      {/* 登录门在阶段 3（M1-c）接入：本地功能不被阻塞（本地优先） */}
+      {/* 登录门（阶段 3 / M1-c）：登录即解锁；本地功能不被阻塞（本地优先） */}
+      {needGate && <Login />}
     </div>
   );
 }

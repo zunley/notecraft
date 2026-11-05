@@ -5,6 +5,14 @@
 """
 
 from dataclasses import dataclass
+import re
+
+# username 规格（API.md §3）：小写、唯一、仅作登录句柄、不进任何路径
+# 注册校验（core/auth）与索引文件名（adapters/user_store）共同使用，防路径穿越
+USERNAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{2,31}$")
+
+# 信封字段（password / protected_key）的 wire 形状：base64url 无填充（API.md §1）
+B64URL_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 @dataclass(frozen=True)

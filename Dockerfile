@@ -23,4 +23,4 @@ USER notecraft
 ENV NOTE_MD_ROOT=/notes
 ENV NOTE_MD_DATA_DIR=/data
 EXPOSE 8080
-CMD ["uvicorn", "app.main:app", "--app-dir", "src/server", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "app.main:create_app", "--factory", "--app-dir", "src/server", "--host", "0.0.0.0", "--port", "8080"]

@@ -62,7 +62,13 @@ def test_config_rejects_bad_values() -> None:
 
 
 def test_create_app() -> None:
-    app = create_app()
+    import tempfile
+
+    from app.config import Settings
+
+    with tempfile.TemporaryDirectory() as tmp:
+        settings = Settings(data_dir=Path(tmp) / "data", notes_root=Path(tmp) / "notes", token_secret="s")
+        app = create_app(settings)
     assert app.title == "notecraft"
 
 

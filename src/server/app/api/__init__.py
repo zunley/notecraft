@@ -3,13 +3,17 @@
 规则：不含业务规则、不直接触碰 adapters，只依赖 core 与 deps。
 
 路由汇总：main.py 只 include 本文件导出的 api_router。
-
-TODO:
-- api_router = APIRouter()，挂载：
-    auth_router   （./auth.py）   prefix="/api/auth"
-    sync_router   （./sync.py）   prefix="/api/sync"
-    relay_router  （./relay.py）  prefix="/api/ai/v1"   （/v1 是 OpenAI 兼容约定）
-    health_router （./health.py） 免鉴权
 """
-# from fastapi import APIRouter
-# api_router = APIRouter()
+
+from __future__ import annotations
+
+from fastapi import APIRouter
+
+from .auth import auth_router
+from .health import health_router
+
+api_router = APIRouter()
+api_router.include_router(auth_router)
+api_router.include_router(health_router)
+# 阶段 4 挂 relay_router（./relay.py，prefix="/api/ai/v1"——/v1 是 OpenAI 兼容约定）
+# 阶段 5 挂 sync_router（./sync.py，prefix="/api/sync")

@@ -9,14 +9,17 @@ dev:
 	@$(MAKE) -j2 dev-api dev-web
 
 dev-api:
-	cd src/server && $(PY) -m uvicorn app.main:app --reload
+	cd src/server && NOTE_MD_ROOT="$${NOTE_MD_ROOT:-$(CURDIR)/notes}" \
+	  NOTE_MD_DATA_DIR="$${NOTE_MD_DATA_DIR:-$(CURDIR)/data}" \
+	  $(PY) -m uvicorn app.main:create_app --factory --reload
 
 dev-web:
 	cd src/client/web && npm run dev
 
 # --- 测试 ---
-
+# pytest：分层单测（fake ports）+ HTTP 集成（tmp 数据目录）+ 架构铁律；smoke 为独立冒烟入口
 test:
+	$(PY) -m pytest src/server/tests -q
 	$(PY) src/server/tests/smoke.py
 
 # --- 构建与部署（服务端镜像 = 后端 + Web 静态资源）---

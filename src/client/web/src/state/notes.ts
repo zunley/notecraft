@@ -47,6 +47,8 @@ interface NotesState {
   status: SaveStatus;
   lastSavedAt: number | null;
   error: string | null;
+  /** 内容版本号：open() 自增（AI 覆写当前文件后 Editor 据此重载）；save 不自增 */
+  contentVersion: number;
 
   init(storage: StorageAdapter): Promise<void>;
   refresh(): Promise<void>;
@@ -74,6 +76,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   status: "idle",
   lastSavedAt: null,
   error: null,
+  contentVersion: 0,
 
   async init(storage) {
     set({ storage });
@@ -92,7 +95,13 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     set({ status: "loading", error: null });
     try {
       const { content, hash } = await storage.readFile(path);
-      set({ currentPath: path, currentContent: content, baseHash: hash, status: "saved" });
+      set((s) => ({
+        currentPath: path,
+        currentContent: content,
+        baseHash: hash,
+        status: "saved",
+        contentVersion: s.contentVersion + 1,
+      }));
     } catch (e) {
       set({
         status: "idle",

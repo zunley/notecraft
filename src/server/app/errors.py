@@ -108,3 +108,11 @@ class QuotaExceededError(DomainError):
 
     status = 507
     code = "storage_quota_exceeded"
+
+
+class GatewayUnavailableError(DomainError):
+    """LLM 网关未配置（OPENAI_BASE_URL/KEY 缺失）→ 503 upstream_unavailable。
+    上游自身返回的错误不走本类——由 ports.UpstreamError 原样透传（API.md §5）。"""
+
+    status = 503
+    code = "upstream_unavailable"

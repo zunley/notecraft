@@ -10,9 +10,8 @@
 ★ 灵活性来源：换实现（用户表账号、LLM 直连网关）只动 adapters/ 与本文件，
   core/ 与 api/ 零改动——对应 ARCHITECTURE.md §4 的全部演进切换点。
 
-已装配（阶段 2）：FileUserStore → AuthCore → api 路由 + 领域错误统一翻译 +
-按 IP 的注册/登录限速中间件 + token 签名密钥（env 或数据目录持久化）。
-阶段 4 追加：HttpLlmGateway / MemRelayQuota → RelayCore → relay 路由。
+已装配（阶段 2/4）：FileUserStore → AuthCore；HttpLlmGateway + MemRelayQuota → RelayCore；
+api 路由 + 领域错误统一翻译 + 按 IP 的注册/登录限速中间件 + token 签名密钥。
 阶段 5 追加：FileNoteStore 完整实现 → SyncCore → sync 路由。
 ★ 装配形态（不引 DI 容器）：实例挂 app.state，api 层用 FastAPI Depends 取用；
   测试用 dependency_overrides 或 create_app(settings) 注入，不 monkeypatch。
@@ -31,10 +30,13 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .adapters.file_store import FileNoteStore
+from .adapters.llm_gateway import HttpLlmGateway
+from .adapters.relay_quota import MemRelayQuota
 from .adapters.user_store import FileUserStore
 from .api import api_router
 from .config import Settings, get_settings
 from .core.auth import AuthCore
+from .core.relay import RelayCore
 from .errors import DomainError, RateLimitError, RelayQuotaExceededError
 
 # 注册/登录限速（按 IP）的窗口
@@ -126,19 +128,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     users = FileUserStore(settings.users_dir)
     notes = FileNoteStore(settings.notes_root, settings.file_max, settings.storage_quota)
     secret = _resolve_token_secret(settings)
+    gateway = HttpLlmGateway(
+        base_url=settings.openai_base_url,
+        api_key=settings.openai_api_key,
+        model=settings.openai_model,
+    )
+    quota = MemRelayQuota(settings.relay_daily_quota)
 
     # ── 注入 core ─────────────────────────────────────────────
     app.state.users = users
     app.state.notes = notes
     app.state.auth = AuthCore(users=users, notes=notes, settings=settings, secret=secret)
-    # 阶段 4: app.state.relay = RelayCore(gateway=..., quota=..., settings=...)
+    app.state.relay = RelayCore(gateway=gateway, quota=quota, settings=settings)
     # 阶段 5: app.state.sync = SyncCore(store=notes, settings=settings)
 
     # ── 横切 + 路由 ────────────────────────────────────────────
     _install_error_handlers(app)
     _install_auth_rate_limit(app, settings)
     app.include_router(api_router)
-    # 阶段 4: relay 路由；阶段 5: sync 路由
+    # 阶段 5: sync 路由
 
     _mount_web(app)  # 静态托管最后挂（兜底路由）
     return app

@@ -25,6 +25,16 @@ from .types import Manifest, StoredFile, User
 Stream = AsyncIterator[bytes]
 
 
+class UpstreamError(Exception):
+    """上游 LLM 网关返回错误——api 层原样透传（状态码 + 原始响应体，
+    保持 OpenAI 错误形状，不包进本项目错误模型，API.md §5）。"""
+
+    def __init__(self, status: int, body: bytes):
+        super().__init__(f"upstream {status}")
+        self.status = status
+        self.body = body
+
+
 class UserStore(Protocol):
     """用户表（API.md §3/§8）。
 
@@ -85,7 +95,14 @@ class LlmGateway(Protocol):
     ★ 零留存（DESIGN.md §6.5）：转发即消失，不归档、不记请求体。
     """
 
-    def stream(self, payload: dict) -> Stream: ...
+    @property
+    def ready(self) -> bool:
+        """网关是否已配置（base_url + key）；未就绪由 core 抛 503。"""
+        ...
+
+    async def stream(self, payload: dict) -> Stream:
+        """发起上游请求并返回可迭代的 SSE 字节流；上游 4xx/5xx 抛 UpstreamError。"""
+        ...
 
 
 class RelayQuota(Protocol):

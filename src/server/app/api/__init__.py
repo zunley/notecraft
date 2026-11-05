@@ -11,9 +11,10 @@ from fastapi import APIRouter
 
 from .auth import auth_router
 from .health import health_router
+from .relay import relay_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router)
 api_router.include_router(health_router)
-# 阶段 4 挂 relay_router（./relay.py，prefix="/api/ai/v1"——/v1 是 OpenAI 兼容约定）
-# 阶段 5 挂 sync_router（./sync.py，prefix="/api/sync")
+api_router.include_router(relay_router)
+# 阶段 5 挂 sync_router（./sync.py，prefix="/api/sync"）

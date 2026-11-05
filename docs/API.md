@@ -48,6 +48,7 @@
 | 413 | `payload_too_large` | 单文件超过 `NOTE_MD_FILE_MAX` |
 | 429 | `rate_limited` | 注册/登录限速（带 `Retry-After` 头） |
 | 429 | `relay_quota_exceeded` | 中继当日配额用尽，`details.reset_at` = 次日零点（Unix 秒） |
+| 503 | `upstream_unavailable` | LLM 网关未配置（`OPENAI_BASE_URL`/`OPENAI_API_KEY` 缺失） |
 | 507 | `storage_quota_exceeded` | 用户存储配额用尽 |
 
 上游 LLM 网关的错误**原样透传**（保持 OpenAI 错误形状），不包进本错误模型。

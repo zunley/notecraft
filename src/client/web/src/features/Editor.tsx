@@ -19,6 +19,7 @@ const SAVE_DEBOUNCE_MS = 800; // 本地保存防抖（同步推送防抖 ~2s 另
 
 export function Editor() {
   const currentPath = useNotesStore((s) => s.currentPath);
+  const contentVersion = useNotesStore((s) => s.contentVersion);
   const viewMode = useNotesStore((s) => s.viewMode);
   const status = useNotesStore((s) => s.status);
   const lastSavedAt = useNotesStore((s) => s.lastSavedAt);
@@ -67,7 +68,7 @@ export function Editor() {
     };
   }, [mounted]);
 
-  // 切换文件：先兜底落盘旧草稿，再以 store 中已保存内容填充编辑器
+  // 切换文件 / 外部重载（contentVersion）：先兜底处理旧草稿，再同步编辑器内容
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
@@ -76,14 +77,22 @@ export function Editor() {
       saveTimer.current = null;
     }
     const pending = pendingRef.current;
+    const { currentContent } = useNotesStore.getState();
+
+    if (pending && pending.path === currentPath && pending.text !== currentContent) {
+      // 同路径外部重载（如 AI 覆写）：保留本地草稿，按乐观锁落盘（不符即 conflict，不覆盖）
+      pendingRef.current = null;
+      void useNotesStore.getState().save(pending.text);
+      setDraft(pending.text);
+      return;
+    }
     if (pending?.path && pending.path !== currentPath) {
       void useNotesStore.getState().save(pending.text, { expectedPath: pending.path });
     }
     pendingRef.current = null;
-    const { currentContent } = useNotesStore.getState();
     view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: currentContent } });
     setDraft(currentContent);
-  }, [currentPath]);
+  }, [currentPath, contentVersion]);
 
   const flushSave = (content: string, force = false) => {
     if (saveTimer.current) clearTimeout(saveTimer.current);

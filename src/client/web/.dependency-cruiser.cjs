@@ -12,9 +12,9 @@ module.exports = {
       name: "features-to-internal",
       severity: "error",
       comment:
-        "features/* 只准 import state/、storage 接口、lib/——不 import crypto 密钥材料、sync/ai 内部（ARCHITECTURE.md §3）。",
+        "features/* 不 import crypto/（密钥材料）与 sync/（引擎由 App 装配）；ai/ 可被 features 消费（Chat 是 AI 的 UI 前端），但反向禁止（见 ai-to-ui）。",
       from: { path: "^src/features/" },
-      to: { path: "^src/(crypto|sync|ai)/" },
+      to: { path: "^src/(crypto|sync)/" },
     },
     {
       name: "state-to-features",

@@ -38,7 +38,7 @@ jobs:
           npm run build
           npm run lint:deps
 
-  # 镜像 = 后端 + Web 静态资源（Dockerfile 两阶段）；仅 v* tag 释出
+  # 镜像释出：服务端（后端 + Web 静态托管单容器）与 Web 客户端（nginx 分容器形态）
   image:
     needs: test
     if: startsWith(github.ref, 'refs/tags/v')
@@ -57,7 +57,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - id: meta
+      - id: meta-server
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/zunley/notecraft
@@ -65,11 +65,31 @@ jobs:
             type=semver,pattern={{version}}
             type=raw,value=latest
 
-      - uses: docker/build-push-action@v6
+      - id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/zunley/notecraft-web
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+
+      - name: 服务端镜像（Dockerfile：后端 + Web 静态托管）
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-server.outputs.tags }}
+          labels: ${{ steps.meta-server.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Web 客户端镜像（Dockerfile.web：nginx 静态 + 同源代理）
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.web
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

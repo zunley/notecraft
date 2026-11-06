@@ -235,7 +235,15 @@ register / login → 经 `UserStore` 校验登录凭证哈希 → HMAC-SHA256 to
   **必须备份**：丢失即无法登录/解锁，兜底靠用户手里的恢复密钥文件）；
 - **桌面**：`tauri build` → nsis / dmg / appimage+deb；
 - **移动**：Xcode / Android Studio，CI 需 macOS runner 与签名证书；
-- **Web**：`vite build` 静态资源，可由服务端托管。
+- **Web 版**（面向零基础用户，**用户零配置**：只面对「不登录可用」与「注册/登录后同步」两个能力，
+  界面不出现服务器地址等任何配置项）：
+  - **单容器**（上条，默认）：`compose.yaml`，静态与 API 同源，一个端口进；
+  - **分容器**：`Dockerfile.web` + `compose.web.yaml`——Web 客户端镜像 `ghcr.io/zunley/notecraft-web`
+    （nginx 静态 + 同源代理 `/api`、`/health` → 服务端），浏览器视角仍单源（免 CORS、免配置）；
+  - 静态产物也可直接丢任意静态托管（纯本地形态，无服务端也能用）；
+  - 服务端地址属于**部署者层面**：同源部署下不存在该值；跨源直连时经运行时注入
+    （`/runtime-config.js`，`NOTE_MD_SERVER_URL`）+ 服务端 `NOTE_MD_ALLOWED_ORIGINS`，均不对用户暴露；
+  - AI 走服务端中继（key 在服务端），不做 BYOK/浏览器内推理——用户只需注册/登录。
 
 ## 8. 加密落点（写代码时的纪律）
 

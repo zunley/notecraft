@@ -81,6 +81,17 @@
 
 **出口（M6）**：打磨项齐备，CI 出镜像。
 
+## 阶段 9 · Web 版独立发布（追加）
+
+31. **运行时配置注入**：`public/runtime-config.js` + `config.ts` 四级解析（localStorage → 运行时注入 → 构建期 env → 同源）——同一产物适配任意部署拓扑，用户不可见
+32. **服务端 CORS 白名单**（`NOTE_MD_ALLOWED_ORIGINS`，默认关闭）：仅跨源直连的部署者选项
+33. **登录页去配置化**：移除服务器地址输入，只留「登录 / 创建账号 / 先离线使用」——面向零基础用户，服务端地址不进 UI
+34. **Web 客户端镜像**：`Dockerfile.web`（node 构建 → nginx 运行时）+ `nginx.conf`（静态 + 同源代理 `/api`、`/health`，SSE 不缓冲）+ `docker-entrypoint.d/`（默认值 + 运行时配置写入）
+35. **`compose.web.yaml`**：静态与 API 分容器、同源代理（用户仍单源访问）；`make web-up/web-build/web-down`
+36. **CI**：`v*` tag 同时释出 `notecraft` 与 `notecraft-web` 两个镜像；文档（README / ARCHITECTURE §7）
+
+**出口**：`docker compose -f compose.web.yaml up -d` 后浏览器单源完成注册/登录/同步，用户全程无任何配置动作。
+
 ## 关键依赖约束（排序依据）
 
 - **envelope → codec → engine**；**keystore → Login/解锁**；**search → ⌘K 与 AI 工具**（单源不可倒置）

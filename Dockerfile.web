@@ -1,0 +1,22 @@
+# ── 前端构建（同一套 UI：src/client/web）─────────────────────
+FROM node:22-bookworm-slim AS build
+WORKDIR /build
+COPY src/client/web/package.json src/client/web/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY src/client/web/ ./
+# 可选构建期服务端地址；容器部署推荐用运行时 NOTE_MD_SERVER_URL（同一镜像适配任意服务端）
+ARG VITE_SERVER_URL=""
+ENV VITE_SERVER_URL=${VITE_SERVER_URL}
+RUN npm run build
+
+# ── 运行时：nginx 静态托管 + 同源 API 代理 + 运行时配置注入 ──
+FROM nginx:1.27-alpine
+# nginx 模板：${NOTE_MD_API_UPSTREAM} 由官方20-envsubst-on-templates.sh 替换
+COPY src/client/web/nginx.conf /etc/nginx/templates/default.conf.template
+# 默认值脚本须先于 envsubst（15 < 20）；运行时配置写入在静态文件就位后（40）
+COPY src/client/web/docker-entrypoint.d/15-defaults.sh /docker-entrypoint.d/15-defaults.sh
+COPY src/client/web/docker-entrypoint.d/40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
+COPY --from=build /build/dist /usr/share/nginx/html
+RUN chmod +x /docker-entrypoint.d/15-defaults.sh /docker-entrypoint.d/40-runtime-config.sh
+
+EXPOSE 80

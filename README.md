@@ -17,7 +17,13 @@
 docker compose up -d
 ```
 
-浏览器打开 http://localhost:8080/ 即可使用（创建账号即开始；`OPENAI_*` 配置好后 AI 可用）。
+浏览器打开 http://localhost:8080/ 即可使用：不登录直接写笔记，注册/登录后开启同步与 AI。
+
+**Web 版分容器部署**（静态页与服务端分两个容器，同源代理、用户无感知；`OPENAI_*` 配好后 AI 可用）：
+
+```bash
+docker compose -f compose.web.yaml up -d   # 浏览器打开 http://localhost:8081/
+```
 
 桌面版（Windows / macOS / Linux 安装包）：随 `v*` tag 的 CI 发布释出。
 
@@ -29,6 +35,7 @@ docker compose up -d
 | `NOTE_MD_INVITE_CODE` | — | `invite` 模式的邀请码 |
 | `NOTE_MD_TOKEN_TTL` | `72h` | 登录有效期 |
 | `NOTE_MD_PORT` | `8080` | 对外映射端口 |
+| `NOTE_MD_WEB_PORT` | `8081` | Web 版分容器部署的对外端口 |
 | `OPENAI_BASE_URL` / `OPENAI_API_KEY` / `OPENAI_MODEL` | — | LLM 网关（AI 中继用，仅服务端持有） |
 
 完整清单与限速/配额默认值见 [docs/API.md](docs/API.md)。

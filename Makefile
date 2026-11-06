@@ -1,4 +1,4 @@
-.PHONY: dev dev-api dev-web tauri-dev tauri-build test build up down logs clean release
+.PHONY: dev dev-api dev-web tauri-dev tauri-build test build up down logs clean release web-build web-up web-down
 
 PY ?= $(shell test -x .venv/bin/python && echo .venv/bin/python || echo python3)
 
@@ -44,6 +44,16 @@ up:
 	docker compose up -d
 
 deploy: build up
+
+# --- Web 版独立部署（compose.web.yaml：API + Web 分容器，同源代理）---
+web-build:
+	docker compose -f compose.web.yaml build
+
+web-up:
+	docker compose -f compose.web.yaml up -d
+
+web-down:
+	docker compose -f compose.web.yaml down
 
 down:
 	docker compose down

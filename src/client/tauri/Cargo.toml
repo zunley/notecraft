@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2021"
 description = "本地优先跨平台 Markdown 笔记本"
 
+# 移动端（Android/iOS）要求 lib target：唯一实现在 src/lib.rs，桌面入口 main.rs 调用
+[lib]
+name = "notecraft_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 

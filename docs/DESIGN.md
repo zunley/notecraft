@@ -49,7 +49,7 @@
 │ ├─ /api/sync/*      manifest / 文件推拉 / 乐观锁（按 uid 隔离）      │
 │ ├─ /api/ai/v1/*     LLM 中继：校验 token → 注入 key → 流式透传      │
 │ │                   ★ 零留存：不归档、不记录请求体、无会话 API      │
-│ ├─ /health + 可选静态托管 Web 版                                    │
+│ ├─ /health（纯 API——静态由 Web 独立镜像承载）                      │
 │ └─ 存储：/notes 各用户密文仓库（卷）；/data 用户表（卷）           │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -197,7 +197,7 @@ StorageAdapter + lib/search；平台 API（`@tauri-apps/*`）只出现在 storag
 - 认证：**开放注册**（策略可配 open/invite/closed）、登录、续期、换口令、注销；
 - 同步：manifest + 文件推拉 + 乐观锁（密文形态）；
 - LLM 中继：OpenAI 兼容透传，**零留存**；
-- `/health`；可选静态托管 Web 版。
+- `/health`。
 
 **明确不做**——以下能力一律不提供：
 
@@ -223,13 +223,13 @@ StorageAdapter + lib/search；平台 API（`@tauri-apps/*`）只出现在 storag
 
 ### 4.3 部署
 
-- **服务端**：Docker 单容器（后端 + Web 静态托管），两个卷：
+- **服务端**：Docker 容器（**纯 API**——完全分容器，静态由独立 Web 镜像承载），两个卷：
   - `/notes`——各用户密文仓库（`<uid>/` 分目录），**全部是密文**；
   - `/data`——用户表（登录凭证哈希 + protected_key）。
     **这一卷必须备份**：丢失意味着无人能登录、无人能解锁笔记（兜底靠用户手里的恢复密钥文件，见 §6.2）；
 - **桌面**：`tauri build` → nsis / dmg / appimage+deb；
 - **移动**：Xcode / Android Studio，CI 需 macOS runner 与签名证书；
-- **Web**：`vite build` 静态资源，可由服务端托管。
+- **Web**：`vite build` 静态资源，独立镜像 `ghcr.io/zunley/notecraft` 托管（完全分容器，见 ARCHITECTURE §7）。
 
 ---
 

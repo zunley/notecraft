@@ -23,11 +23,9 @@ from __future__ import annotations
 import math
 import secrets
 import time
-from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 from .adapters.file_store import FileNoteStore
 from .adapters.llm_gateway import HttpLlmGateway
@@ -132,13 +130,6 @@ def _install_auth_rate_limit(app: FastAPI, settings: Settings) -> None:
         return await call_next(request)
 
 
-def _mount_web(app: FastAPI) -> None:
-    """可选静态托管 Web 版（vite build 产物；不存在则仅 API）。"""
-    dist = Path(__file__).resolve().parents[2] / "client" / "web" / "dist"
-    if (dist / "index.html").is_file():
-        app.mount("/", StaticFiles(directory=str(dist), html=True), name="web")
-
-
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
 
@@ -169,7 +160,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     _install_auth_rate_limit(app, settings)
     app.include_router(api_router)
 
-    _mount_web(app)  # 静态托管最后挂（兜底路由）
     return app
 
 

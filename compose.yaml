@@ -1,17 +1,44 @@
+# notecraft 完全分容器部署：Web 客户端（用户入口）+ 服务端（纯 API）
+#
+#   docker compose up -d
+#   浏览器打开 http://localhost:8080/ 即可使用：
+#   不登录直接写笔记，注册/登录后开启同步与 AI。
+#
+# 完全分离（docs/ARCHITECTURE.md §7）：
+# - 服务端镜像不内嵌静态托管——API 极简稳定、前端高频发版，两者独立构建/发布/扩容；
+# - 浏览器仍单源：web 容器 nginx 把 /api、/health 同源代理到服务端，
+#   用户零配置、免 CORS；代理目标是 compose 内部服务名，不对用户暴露。
+#
+# 端口：web = 8080（用户唯一入口）；server = 8081（桌面端同步 / 直连客户端用）。
 services:
-  notecraft:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: ghcr.io/zunley/notecraft:latest
+    ports:
+      - "${NOTE_MD_WEB_PORT:-8080}:80"
+    environment:
+      NOTE_MD_API_UPSTREAM: http://server:8080   # 同源代理目标（compose 内部服务名）
+      NOTE_MD_SERVER_URL: ${NOTE_MD_SERVER_URL:-}  # 空 = 同源代理（默认，用户零配置）
+    depends_on:
+      - server
+    restart: unless-stopped
+
+  server:
     build: .
     image: ghcr.io/zunley/notecraft-server:latest
     ports:
-      - "${NOTE_MD_PORT:-8080}:8080"
+      - "${NOTE_MD_PORT:-8081}:8080"   # 桌面端同步 / 直连客户端需要
     volumes:
-      - ./notes:/notes          # 各用户密文仓库（<uid>/ 分目录）
-      - ./data:/data            # 用户表 + protected_key（必须备份）
+      - ./notes:/notes                 # 各用户密文仓库（<uid>/ 分目录）
+      - ./data:/data                   # 用户表 + protected_key（必须备份）
     environment:
-      NOTE_MD_REGISTRATION: ${NOTE_MD_REGISTRATION:-open}   # 注册策略 open/invite/closed
-      NOTE_MD_INVITE_CODE: ${NOTE_MD_INVITE_CODE:-}         # invite 模式邀请码（可选）
+      NOTE_MD_REGISTRATION: ${NOTE_MD_REGISTRATION:-open}
+      NOTE_MD_INVITE_CODE: ${NOTE_MD_INVITE_CODE:-}
       NOTE_MD_TOKEN_TTL: ${NOTE_MD_TOKEN_TTL:-72h}
       NOTE_MD_DATA_DIR: ${NOTE_MD_DATA_DIR:-/data}
+      NOTE_MD_ALLOWED_ORIGINS: ${NOTE_MD_ALLOWED_ORIGINS:-}   # 仅跨源直连时需要（默认同源代理）
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-}

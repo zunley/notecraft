@@ -10,7 +10,7 @@
 - NOTE_MD_TOKEN_TTL            token 有效期（默认 72h，支持 s/m/h/d）
 - NOTE_MD_TOKEN_SECRET         token 签名密钥（可选；缺省时在数据目录生成并持久化）
 - NOTE_MD_ALLOWED_ORIGINS      CORS 白名单（逗号分隔，支持 *）——仅「Web 客户端直连且不同源」时需要；
-                               同源代理部署（compose.web.yaml 默认）无需配置
+                               同源代理部署（compose.yaml 默认）无需配置
 - NOTE_MD_ROOT / NOTE_MD_DATA_DIR   /notes 密文仓库（<uid>/ 分片）/ 用户表目录
 - OPENAI_BASE_URL / OPENAI_API_KEY / OPENAI_MODEL   LLM 网关（仅中继使用，不下发）
 

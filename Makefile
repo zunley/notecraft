@@ -1,4 +1,4 @@
-.PHONY: dev dev-api dev-web tauri-dev tauri-build test build up down logs clean release web-build web-up web-down
+.PHONY: dev dev-api dev-web tauri-dev tauri-build test build up down logs clean release
 
 PY ?= $(shell test -x .venv/bin/python && echo .venv/bin/python || echo python3)
 
@@ -35,7 +35,7 @@ test:
 	$(PY) -m pytest src/server/tests -q
 	$(PY) src/server/tests/smoke.py
 
-# --- 构建与部署（服务端镜像 = 后端 + Web 静态资源）---
+# --- 构建与部署（完全分容器：web + server 两镜像）---
 
 build:
 	docker compose build --no-cache
@@ -45,15 +45,6 @@ up:
 
 deploy: build up
 
-# --- Web 版独立部署（compose.web.yaml：API + Web 分容器，同源代理）---
-web-build:
-	docker compose -f compose.web.yaml build
-
-web-up:
-	docker compose -f compose.web.yaml up -d
-
-web-down:
-	docker compose -f compose.web.yaml down
 
 down:
 	docker compose down

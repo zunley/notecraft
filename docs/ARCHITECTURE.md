@@ -36,7 +36,7 @@
 │  │                    ★ 零留存：不归档、不记请求体、无会话状态       │
 │  ├─ 鉴权依赖 require_user（多租户的唯一切换点）                      │
 │  ├─ 配额：存储 / 中继日额 / 注册登录限速（按 uid 或 IP）             │
-│  ├─ /health + 可选静态托管 Web 版                                    │
+│  ├─ /health（纯 API——静态由 Web 独立镜像承载）                       │
 │  └─ 存储：/notes/<uid>/ 密文仓库（卷）；/data 用户表（卷）           │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -108,8 +108,9 @@ notecraft/
 │               ├── user_store.py      # 用户表 + protected_key 存取（/data 卷）
 │               ├── llm_gateway.py     # httpx 流式 + key 只存于此
 │               └── relay_quota.py     # 中继日配额（本期内存计数）
-├── Dockerfile              # 两阶段：node 构建前端 → python 运行时
-├── compose.yaml            # /notes + /data 两个卷
+├── Dockerfile              # 服务端镜像（纯 API，不内嵌静态）
+├── Dockerfile.web          # Web 客户端镜像（nginx 静态 + 同源代理）
+├── compose.yaml            # 完全分容器编排：web + server 两服务
 ├── Makefile                # dev / test / build / up / release
 ├── .env.example            # 占位符，真实值只在本地 .env（不入库）
 └── .github/workflows/      # CI：测试 → 镜像释出（首个 tag 前补齐）
@@ -230,20 +231,24 @@ register / login → 经 `UserStore` 校验登录凭证哈希 → HMAC-SHA256 to
 
 ## 7. 部署形态
 
-- **服务端**：Docker 单容器（后端 + Web 静态托管），两个卷——
+- **完全分容器（唯一形态）**：API 极简稳定、前端高频发版——服务端镜像**不内嵌静态托管**，
+  Web 与后端独立构建/发布/扩容，两者只经内部网络以同源代理衔接：
+  - **Web 客户端**：`Dockerfile.web` → `ghcr.io/zunley/notecraft`（nginx 静态 +
+    同源代理 `/api`、`/health` → 服务端），用户唯一入口 :8080（`NOTE_MD_WEB_PORT`）；
+  - **服务端**：`Dockerfile` → `ghcr.io/zunley/notecraft-server`（纯 API），
+    :8081（`NOTE_MD_PORT`，桌面端同步 / 直连客户端用）；
+  - `compose.yaml` 一键编排两服务；浏览器视角**单源**——用户零配置、免 CORS；
+- **服务端数据**：两个卷——
   `/notes`（各用户密文仓库 `<uid>/`，**全部密文**）、`/data`（用户表 + protected_key，
   **必须备份**：丢失即无法登录/解锁，兜底靠用户手里的恢复密钥文件）；
 - **桌面**：`tauri build` → nsis / dmg / appimage+deb；
 - **移动**：Xcode / Android Studio，CI 需 macOS runner 与签名证书；
-- **Web 版**（面向零基础用户，**用户零配置**：只面对「不登录可用」与「注册/登录后同步」两个能力，
-  界面不出现服务器地址等任何配置项）：
-  - **单容器**（上条，默认）：`compose.yaml`，静态与 API 同源，一个端口进；
-  - **分容器**：`Dockerfile.web` + `compose.web.yaml`——Web 客户端镜像 `ghcr.io/zunley/notecraft`
-    （nginx 静态 + 同源代理 `/api`、`/health` → 服务端），浏览器视角仍单源（免 CORS、免配置）；
-  - 静态产物也可直接丢任意静态托管（纯本地形态，无服务端也能用）；
-  - 服务端地址属于**部署者层面**：同源部署下不存在该值；跨源直连时经运行时注入
-    （`/runtime-config.js`，`NOTE_MD_SERVER_URL`）+ 服务端 `NOTE_MD_ALLOWED_ORIGINS`，均不对用户暴露；
-  - AI 走服务端中继（key 在服务端），不做 BYOK/浏览器内推理——用户只需注册/登录。
+- **用户约束（不可违反）**：零基础用户只面对「不登录可用」与「注册/登录后同步」两个能力，
+  界面不出现服务器地址等任何配置项——服务端地址属**部署者层面**：同源代理下不存在该值；
+  跨源直连时经运行时注入（`/runtime-config.js`，`NOTE_MD_SERVER_URL`）+ 服务端
+  `NOTE_MD_ALLOWED_ORIGINS`，均不对用户暴露；AI 走服务端中继（key 在服务端），
+  不做 BYOK/浏览器内推理——用户只需注册/登录；
+- **纯静态降级**：`dist/` 可直接丢任意静态托管（无服务端也能本地用）。
 
 ## 8. 加密落点（写代码时的纪律）
 
@@ -266,7 +271,7 @@ M4 Tauri 桌面 → M5 响应式+移动端 → M6 打磨），本节不复写，
 **命名约定**
 - 仓库/产品名：**notecraft**；环境变量前缀：**`NOTE_MD_*`**（实现与文档一致，改前缀需同步 DESIGN.md）；
 - 镜像（用户优先：主名给用户直接使用的 Web 版）：`ghcr.io/zunley/notecraft`（Web 客户端）、
-  `ghcr.io/zunley/notecraft-server`（服务端，单容器含内嵌 Web 静态托管）；
+  `ghcr.io/zunley/notecraft-server`（服务端，纯 API，不内嵌静态）；
 - 服务端 Python 包名：**`app`**（`uvicorn app.main:app --app-dir src/server`）；
 - Tauri 壳目录：**`src/client/tauri/`**（若 `tauri init` CLI 不支持自定义路径，
   则回退默认 `src-tauri/` 移入 `src/client/`——未决项 1）。

@@ -63,6 +63,8 @@ interface NotesState {
    */
   save(content: string, opts?: { force?: boolean; expectedPath?: string }): Promise<void>;
   createFile(path: string, content?: string): Promise<void>;
+  /** 新建文件夹（嵌套路径递归创建）；已存在则报错不覆盖 */
+  createDir(path: string): Promise<void>;
   remove(path: string): Promise<void>;
   rename(from: string, to: string): Promise<void>;
   setViewMode(mode: ViewMode): void;
@@ -174,6 +176,17 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     await get().refresh();
     get().onLocalChange?.(path);
     await get().open(path);
+  },
+
+  async createDir(path) {
+    const s = get();
+    if (!s.storage) return;
+    if (await s.storage.stat(path)) {
+      set({ error: `已存在：${path}` });
+      return;
+    }
+    await s.storage.createDir(path);
+    await get().refresh();
   },
 
   async remove(path) {

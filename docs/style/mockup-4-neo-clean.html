@@ -90,16 +90,14 @@ body{
   border:2px solid var(--tx); border-radius:12px; padding:58px 68px 76px;
   box-shadow:6px 6px 0 var(--panel);
 }
-.doc-status{
-  display:inline-flex; align-items:center; gap:8px; font-size:.72rem;
-  font-family:var(--mono); background:var(--lime); color:var(--tx);
-  padding:4px 12px; border-radius:20px; margin-bottom:28px; font-weight:500;
+.save-status{
+  color:var(--tx-3); font-size:.72rem; font-family:var(--mono);
+  margin-left:2px; white-space:nowrap;
 }
 h1{
   font-family:"Noto Sans SC",var(--font); font-weight:900;
   font-size:2.3rem; letter-spacing:-.01em; line-height:1.32; margin-bottom:12px;
 }
-.meta{color:var(--tx-3); font-size:.8rem; font-family:var(--mono); margin-bottom:36px}
 h2{
   font-family:"Noto Sans SC",var(--font); font-size:1.22rem; font-weight:700;
   margin:40px 0 16px; display:flex; align-items:center; gap:12px;
@@ -206,6 +204,7 @@ td:first-child{font-family:var(--mono); color:var(--blue); font-weight:600}
 <div class="topbar">
   <div class="brand">note<em>.</em>md</div>
   <div class="path">brain / <b>记忆.md</b></div>
+  <div class="save-status">✓ 已保存</div>
   <div class="spacer"></div>
   <button class="nb-btn">搜索<kbd>⌘K</kbd></button>
   <button class="nb-btn">分栏</button>
@@ -221,7 +220,7 @@ td:first-child{font-family:var(--mono); color:var(--blue); font-weight:600}
         <li class="file active">记忆.md</li>
         <li class="file">认知偏差.md</li>
         <li class="file">原子笔记.md</li>
-        <li class="new-row"><span class="target">brain/</span><input placeholder="文件名.md"><span class="hint">↵ 创建 · Esc 取消</span></li>
+        <li class="new-row"><span class="target">brain/</span><input placeholder="文件名.md 或 目录名/"><span class="hint">↵ 创建 · Esc</span></li>
       </ul></li>
       <li class="dir"><span class="caret">▾</span><span class="name">projects</span></li>
       <li><ul>
@@ -236,9 +235,7 @@ td:first-child{font-family:var(--mono); color:var(--blue); font-weight:600}
 
   <div class="editor-wrap">
     <article class="paper">
-      <div class="doc-status">● 已保存 · 10:42 · 1,286 字</div>
       <h1>记忆是思维的基础设施</h1>
-      <div class="meta">brain/记忆.md · 更新于今天 10:42</div>
 
       <blockquote><p>记录不是为了囤积，而是为了在需要的时候能被找到。</p></blockquote>
 

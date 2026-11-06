@@ -4,7 +4,7 @@
  * - token 只是「同步与中继」的通行证——过期/未登录不影响本地编辑（§3.6）；
  * - unlocked = keystore 常驻 MK——同步加解密的前提；两者独立（可离线本地用、未解锁）；
  * - 登录即解锁：派生 L → 服务端校验 → protected_key → KEK 解封 MK（§6.3）；
- * - 「离线使用」（guest）只是关闭登录门，不落任何凭证。
+ * - 登录门（gate）只由用户点击底部「登录 / 解锁」打开——启动永不自动弹出。
  *
  * ★ 依赖方向：state → lib（api/config/errors）+ crypto（keystore）——
  *   features 不直接碰 keystore/密钥材料（依赖铁律）。
@@ -21,8 +21,8 @@ interface AuthState {
   hasToken: boolean;
   /** keystore 是否常驻 MK（同步加解密可用） */
   unlocked: boolean;
-  /** 登录页「离线使用」——本地功能不被阻塞（本地优先） */
-  guest: boolean;
+  /** 登录/解锁门是否显示——只由用户主动点击打开，启动时不自动弹出 */
+  gate: boolean;
   username: string | null;
   policy: RegistrationPolicy | null;
   busy: boolean;
@@ -39,16 +39,11 @@ interface AuthState {
   changePassword(oldPassword: string, newPassword: string): Promise<boolean>;
   deleteAccount(password: string): Promise<boolean>;
   logout(): void;
-  dismissGuest(): void;
+  /** 打开登录/解锁门（仅状态栏「登录 / 解锁」按钮调用） */
+  openGate(): void;
+  /** 关闭登录门（先离线使用 / 稍后再说）——本地功能永不被阻塞 */
+  closeGate(): void;
   clearError(): void;
-}
-
-function guestDismissed(): boolean {
-  try {
-    return localStorage.getItem("notecraft.guest") === "1";
-  } catch {
-    return false;
-  }
 }
 
 function errMessage(e: unknown): string {
@@ -76,7 +71,7 @@ function errMessage(e: unknown): string {
 export const useAuthStore = create<AuthState>((set, get) => ({
   hasToken: false,
   unlocked: false,
-  guest: false,
+  gate: false,
   username: null,
   policy: null,
   busy: false,
@@ -85,7 +80,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   async init() {
     const hasToken = !!getToken();
-    set({ hasToken, unlocked: keystore.isUnlocked(), guest: !hasToken && guestDismissed() });
+    // ★ 登录门永不自动弹出：只有用户点底部「登录 / 解锁」才打开（本地优先铁律）
+    set({ hasToken, unlocked: keystore.isUnlocked(), gate: false });
     if (hasToken && !keystore.isUnlocked()) {
       // 刷新后 MK 不在内存——但本地明文照常可用；登录/REK 再解锁即可（§3.6）
       set({ username: localStorage.getItem("notecraft.username") });
@@ -112,7 +108,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         hasToken: true,
         unlocked: true,
-        guest: false,
+        gate: true, // 保持打开：注册后须先展示一次性恢复密钥
         username,
         busy: false,
         pendingRecoveryKey: vault.recoveryKey,
@@ -137,7 +133,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         hasToken: true,
         unlocked: true,
-        guest: false,
+        gate: false,
         username,
         busy: false,
         pendingRecoveryKey: null,
@@ -156,6 +152,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         unlocked: true,
         busy: false,
+        gate: false,
         username: rec.username || get().username,
         // REK 含 L：若在线，尝试直接登录换 token（离线则仅本地解锁）
       });
@@ -214,13 +211,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ hasToken: false, unlocked: false, username: null, pendingRecoveryKey: null });
   },
 
-  dismissGuest() {
-    try {
-      localStorage.setItem("notecraft.guest", "1");
-    } catch {
-      /* ignore */
-    }
-    set({ guest: true });
+  openGate() {
+    set({ gate: true });
+  },
+
+  closeGate() {
+    set({ gate: false });
   },
 
   clearError() {

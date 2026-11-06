@@ -288,6 +288,10 @@ textarea {
   color: var(--tx-3);
   font-size: 0.64rem;
 }
+.new-row .hint.err {
+  color: var(--danger);
+  font-weight: 600;
+}
 .sidebar-actions {
   display: flex;
   gap: 8px;
@@ -315,32 +319,35 @@ textarea {
   box-shadow: 6px 6px 0 var(--panel);
   min-height: calc(100vh - var(--topbar-h) - 150px);
 }
-.doc-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+/* 保存状态胶囊（note.md 设计：状态在顶栏，正文只留内容） */
+.save-status {
+  color: var(--tx-3);
   font-size: 0.72rem;
   font-family: var(--mono);
-  background: var(--lime);
-  color: var(--tx);
-  padding: 4px 12px;
-  border-radius: 20px;
-  margin-bottom: 24px;
-  font-weight: 500;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
-.doc-status.saving {
-  background: var(--orange);
-  color: #fff;
+.save-status.saving {
+  color: var(--tx-2);
 }
-.doc-status.conflict {
-  background: var(--danger);
-  color: #fff;
+.save-status.err {
+  color: var(--danger);
+  font-weight: 700;
 }
-.doc-meta {
-  color: var(--tx-3);
-  font-size: 0.8rem;
-  font-family: var(--mono);
-  margin-bottom: 28px;
+/* 冲突/异常横幅（仅异常时出现，常态零占位） */
+.conflict {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border: 2px solid var(--orange);
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  font-size: 0.82rem;
+}
+.conflict span {
+  color: var(--tx-2);
 }
 .empty-editor {
   color: var(--tx-3);
@@ -375,6 +382,90 @@ textarea {
 .cm-gutters {
   background: none;
   border-right: 1px solid var(--line);
+  color: var(--tx-3);
+}
+
+/* 内联渲染（模式 A）：行装饰 + 标记隐藏后的样式（features/inlinePreview）。
+   注意：行间距只能用 padding，margin 会破坏 CM6 行高测量（光标错乱/视觉重叠）。 */
+.cm-editor .cm-line {
+  padding: 0;
+}
+.cm-editor .cm-line.cm-h1 {
+  font-family: "Noto Sans SC", var(--font);
+  font-weight: 900;
+  font-size: 1.72em;
+  letter-spacing: -0.01em;
+  line-height: 1.45;
+  padding: 0.38em 0 0.12em;
+}
+.cm-editor .cm-line.cm-h2 {
+  font-family: "Noto Sans SC", var(--font);
+  font-weight: 700;
+  font-size: 1.32em;
+  line-height: 1.55;
+  padding: 0.42em 0 0.1em;
+}
+.cm-editor .cm-line.cm-h2::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background: var(--orange);
+  border: var(--bd);
+  border-radius: 3px;
+  margin-right: 10px;
+  vertical-align: baseline;
+}
+.cm-editor .cm-line.cm-h3 {
+  font-family: "Noto Sans SC", var(--font);
+  font-weight: 700;
+  font-size: 1.12em;
+  line-height: 1.6;
+  padding: 0.35em 0 0.08em;
+}
+.cm-editor .cm-line.cm-h4,
+.cm-editor .cm-line.cm-h5,
+.cm-editor .cm-line.cm-h6 {
+  font-family: "Noto Sans SC", var(--font);
+  font-weight: 700;
+  padding: 0.28em 0 0.06em;
+}
+.cm-editor .cm-line.cm-quote {
+  color: var(--tx-2);
+  border-left: 3px solid var(--orange);
+  padding: 0.12em 0 0.12em 14px;
+}
+
+/* 语法高亮（源码展开行 / 分栏左栏） */
+.cm-tok-heading {
+  font-family: "Noto Sans SC", var(--font);
+  font-weight: 700;
+}
+.cm-tok-strong {
+  font-weight: 700;
+}
+.cm-tok-em {
+  font-style: italic;
+}
+.cm-tok-code {
+  background: var(--lime);
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-family: var(--mono);
+}
+.cm-tok-link {
+  color: var(--blue);
+}
+.cm-tok-url {
+  color: var(--tx-3);
+}
+.cm-tok-quote {
+  color: var(--tx-2);
+}
+.cm-tok-strike {
+  text-decoration: line-through;
+}
+.cm-tok-meta {
   color: var(--tx-3);
 }
 
@@ -549,6 +640,8 @@ textarea {
   padding: 2px 10px;
   font-family: var(--mono);
   font-weight: 500;
+  cursor: pointer;
+  user-select: none;
 }
 .ai-head .badge.off {
   background: var(--panel);

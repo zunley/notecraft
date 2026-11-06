@@ -8,7 +8,8 @@
  *   部署者层面的事：Web 版同源部署，客户端永远同源请求）；
  * - 无账号可创建（策略 GET /api/auth/policy）；注册即登录 + 一次性导出 REK 恢复密钥；
  * - 已有 token 但 MK 不在内存（刷新后）→ 本页作「解锁门」；可用 REK 离线解锁；
- * - 「先离线使用」= 关闭登录门（guest）——本地功能永不被阻塞（本地优先铁律）。
+ * - 「先离线使用 / 稍后再说」= 关闭登录门（closeGate）——本地功能永不被阻塞（本地优先铁律）；
+ * - 本页只在用户点击底部「登录 / 解锁」后出现，启动时永不自动弹出。
  */
 import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "../state/auth";
@@ -35,7 +36,7 @@ export function Login() {
   const register = useAuthStore((s) => s.register);
   const login = useAuthStore((s) => s.login);
   const unlockWithRecovery = useAuthStore((s) => s.unlockWithRecovery);
-  const dismissGuest = useAuthStore((s) => s.dismissGuest);
+  const closeGate = useAuthStore((s) => s.closeGate);
   const clearError = useAuthStore((s) => s.clearError);
 
   const [mode, setMode] = useState<Mode>("login");
@@ -74,7 +75,13 @@ export function Login() {
               >
                 ⬇ 下载恢复密钥
               </button>
-              <button className="nb-btn" onClick={() => useAuthStore.setState({ pendingRecoveryKey: null })}>
+              <button
+                className="nb-btn"
+                onClick={() => {
+                  useAuthStore.setState({ pendingRecoveryKey: null });
+                  closeGate();
+                }}
+              >
                 我已保存，继续
               </button>
             </div>
@@ -189,9 +196,13 @@ export function Login() {
             onChange={(e) => void onRekFile(e.target.files?.[0])}
           />
 
-          {!hasToken && (
+          {!hasToken ? (
             <div className="switch">
-              <a onClick={dismissGuest}>先离线使用 →</a>
+              <a onClick={closeGate}>先离线使用 →</a>
+            </div>
+          ) : (
+            <div className="switch">
+              <a onClick={closeGate}>稍后再说 →</a>
             </div>
           )}
         </form>

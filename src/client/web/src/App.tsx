@@ -3,22 +3,40 @@
  *
  * - 启动时注入平台 StorageAdapter（storage/index 工厂，UI 零分叉）；
  * - 同步引擎（sync/engine）在存储就绪后装配：防抖推送、前后台对齐、投影写入 state/sync；
- * - 顶栏：品牌、当前路径、视图切换（编辑/分栏/预览）、搜索（⌘K，阶段 8）、移动端抽屉开关；
+ * - 顶栏：品牌、当前路径、保存状态胶囊（note.md 设计：状态在顶栏、正文只留内容）、
+ *   视图切换（编辑/分栏/预览）、搜索（⌘K，阶段 8）、移动端抽屉开关；
  * - 状态栏：同步投影 + 立即同步 + 账户（改口令/注销/退出）；AI 悬浮窗（工具循环）；
  * - 快捷键平台归一（⌘/Ctrl 等价，DESIGN §3.5）：⌘J AI 面板、⌘S 落盘、⌘K 搜索、Esc 关闭；
- * - 登录门（Login）——可关，本地存储始终可用（本地优先：登录只为解锁/同步/AI）。
+ * - 登录门（Login）——永不主动弹出，只在用户点底部「登录 / 解锁」后出现；
+ *   本地存储始终可用（本地优先：登录只为解锁/同步/AI）。
  */
 import { useEffect, useRef, useState } from "react";
 import { Chat, CommandPalette, Editor, FileTree, Login, StatusBar } from "./features";
 import { createStorage } from "./storage";
 import { SyncEngine } from "./sync";
-import { useAuthStore, useNotesStore, useSyncStore, type ViewMode } from "./state";
+import { useAuthStore, useNotesStore, useSyncStore, type SaveStatus, type ViewMode } from "./state";
 
 const VIEW_MODES: { mode: ViewMode; label: string }[] = [
   { mode: "edit", label: "编辑" },
   { mode: "split", label: "分栏" },
   { mode: "preview", label: "预览" },
 ];
+
+/** 保存状态文案（顶栏胶囊；正文不放状态——note.md 设计） */
+function saveText(status: SaveStatus, error: string | null): string {
+  switch (status) {
+    case "saving":
+      return "保存中…";
+    case "saved":
+      return "✓ 已保存";
+    case "conflict":
+      return "版本冲突";
+    case "loading":
+      return "加载中…";
+    default:
+      return error ? "保存失败" : "";
+  }
+}
 
 export function App() {
   const [ready, setReady] = useState(false);
@@ -30,15 +48,17 @@ export function App() {
   const currentPath = useNotesStore((s) => s.currentPath);
   const viewMode = useNotesStore((s) => s.viewMode);
   const setViewMode = useNotesStore((s) => s.setViewMode);
+  const saveStatus = useNotesStore((s) => s.status);
+  const saveError = useNotesStore((s) => s.error);
+  const lastSavedAt = useNotesStore((s) => s.lastSavedAt);
   const online = useSyncStore((s) => s.online);
   const patchSync = useSyncStore((s) => s.patch);
-  const hasToken = useAuthStore((s) => s.hasToken);
-  const unlocked = useAuthStore((s) => s.unlocked);
-  const guest = useAuthStore((s) => s.guest);
+  const gate = useAuthStore((s) => s.gate);
+  const pendingRecoveryKey = useAuthStore((s) => s.pendingRecoveryKey);
 
-  // 登录门：无 token 且未选离线使用 → 登录/创建；有 token 但 MK 不在内存 → 解锁门
-  // ★ 门可关（离线使用）且不阻断渲染下的本地功能——本地优先铁律
-  const needGate = (hasToken && !unlocked) || (!hasToken && !guest);
+  // 登录门：只在用户点击底部「登录 / 解锁」后打开（openGate），永不自动弹出
+  // ★ 门可关（离线使用 / 稍后再说）且不阻断渲染下的本地功能——本地优先铁律
+  const needGate = gate;
 
   const engineRef = useRef<SyncEngine | null>(null);
 
@@ -60,6 +80,8 @@ export function App() {
         setChatOpen(false);
         setDrawerOpen(false);
         setPaletteOpen(false);
+        // 登录门可 Esc 关闭（恢复密钥导出页除外——那一步不能跳过）
+        if (!useAuthStore.getState().pendingRecoveryKey) useAuthStore.getState().closeGate();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -137,6 +159,16 @@ export function App() {
           note<em>.</em>md
         </div>
         <div className="path">{currentPath ?? "本地笔记本"}</div>
+        {currentPath && (
+          <div
+            className={`save-status${saveStatus === "saving" ? " saving" : ""}${
+              saveStatus === "conflict" || (saveStatus === "idle" && saveError) ? " err" : ""
+            }`}
+            title={lastSavedAt ? `最后保存 ${new Date(lastSavedAt).toLocaleTimeString()}` : undefined}
+          >
+            {saveText(saveStatus, saveError)}
+          </div>
+        )}
         <div className="spacer" />
         <button className="nb-btn search-btn" onClick={() => setPaletteOpen(true)} title="搜索（⌘K）">
           搜索<kbd>⌘K</kbd>
@@ -176,7 +208,7 @@ export function App() {
         </div>
       )}
       {/* 登录门（阶段 3 / M1-c）：登录即解锁；本地功能不被阻塞（本地优先） */}
-      {needGate && <Login />}
+      {(needGate || pendingRecoveryKey) && <Login />}
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
     </div>
   );

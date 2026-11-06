@@ -1,17 +1,38 @@
 /**
  * 文件树：新建 / 重命名 / 删除——全部走本地 StorageAdapter，离线可用（DESIGN.md §3.3）。
  *
+ * - 新建一律以树内行内输入呈现，类型由输入结尾决定（与 note.md 规则一致）：
+ *   以 `/` 结尾 = 新建文件夹，以 `.md` 结尾 = 新建文件，其余结尾拒绝提交并提示；
+ *   支持 `a/b/`、`a/b.md` 嵌套路径；目标目录前缀在输入行内明确可见；
  * - 双击文件重命名；hover × 移入 .trash/（回收站属笔记本内容、随同步走）；
  * - 目录 hover ＋ 行内新建（mockup 的 new-row 形态）；
  * - 移动端为侧滑抽屉（open/onClose 由 App 注入，样式在 theme.css）。
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNotesStore, type TreeNode } from "../state/notes";
 
 function ensureMd(name: string): string {
   const trimmed = name.trim();
   if (!trimmed) return "";
   return trimmed.endsWith(".md") ? trimmed : `${trimmed}.md`;
+}
+
+type ParsedCreate = { name: string; isDir: boolean } | "empty" | "invalid";
+
+/**
+ * 新建命名校验（与 note.md 一致）：以 `/` 结尾 = 文件夹；以 `.md` 结尾 = 文件；
+ * 其余结尾拒绝（invalid）。支持嵌套路径（`a/b/`、`a/b.md`），但每段必须非空
+ * 且不得为 `.` / `..`（路径穿越防护）；空输入 = 取消（empty）。
+ */
+function parseCreate(raw: string): ParsedCreate {
+  const name = raw.trim();
+  if (!name) return "empty";
+  const isDir = name.endsWith("/");
+  if (!isDir && !name.endsWith(".md")) return "invalid";
+  const clean = isDir ? name.replace(/\/+$/, "") : name;
+  const segs = clean.split("/");
+  if (segs.some((s) => !s || s === "." || s === "..")) return "invalid";
+  return { name: clean, isDir };
 }
 
 interface RowProps {
@@ -25,17 +46,8 @@ interface RowProps {
 
 function DirRow({ node, depth, activePath, creatingIn, setCreatingIn, onNavigate }: RowProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [name, setName] = useState("");
-  const createFile = useNotesStore((s) => s.createFile);
   const children = node.children ?? [];
   const isActiveIn = activePath?.startsWith(`${node.entry.path}/`) ?? false;
-
-  const submit = () => {
-    const file = ensureMd(name);
-    if (file) void createFile(node.entry.path ? `${node.entry.path}/${file}` : file);
-    setName("");
-    setCreatingIn(null);
-  };
 
   return (
     <li>
@@ -65,8 +77,7 @@ function DirRow({ node, depth, activePath, creatingIn, setCreatingIn, onNavigate
           ))}
           {creatingIn === node.entry.path && (
             <li>
-              <NewRow target={`${node.entry.path}/`} value={name} onChange={setName}
-                onSubmit={submit} onCancel={() => { setName(""); setCreatingIn(null); }} />
+              <NewRow dir={node.entry.path} onDone={() => setCreatingIn(null)} />
             </li>
           )}
           {children.length === 0 && creatingIn !== node.entry.path && (
@@ -130,28 +141,55 @@ function NodeRow(props: RowProps) {
   );
 }
 
-function NewRow(props: {
-  target: string;
-  value: string;
-  onChange: (v: string) => void;
-  onSubmit: () => void;
-  onCancel: () => void;
-}) {
+/**
+ * 树内行内新建输入（mockup 的 new-row 形态）：类型由输入结尾决定，
+ * ↵ 或失焦提交，Esc 或空输入取消；非法结尾拒绝提交并就地提示（校验）。
+ */
+function NewRow({ dir, onDone }: { dir: string; onDone: () => void }) {
+  const [value, setValue] = useState("");
+  const [invalid, setInvalid] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const createFile = useNotesStore((s) => s.createFile);
+  const createDir = useNotesStore((s) => s.createDir);
+
+  const submit = () => {
+    const parsed = parseCreate(value);
+    if (parsed === "empty") {
+      onDone();
+      return;
+    }
+    if (parsed === "invalid") {
+      setInvalid(true);
+      inputRef.current?.focus(); // 拒绝提交后保持输入，就地改
+      return;
+    }
+    onDone();
+    const path = dir ? `${dir}/${parsed.name}` : parsed.name;
+    if (parsed.isDir) void createDir(path);
+    else void createFile(path); // 新建文件即打开
+  };
+
   return (
     <div className="new-row">
-      <span className="target">{props.target}</span>
+      <span className="target">{dir ? `${dir}/` : "根/"}</span>
       <input
+        ref={inputRef}
         autoFocus
-        placeholder="文件名.md"
-        value={props.value}
-        onChange={(e) => props.onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") props.onSubmit();
-          if (e.key === "Escape") props.onCancel();
+        placeholder="文件名.md 或 目录名/"
+        value={value}
+        onChange={(e) => {
+          setValue(e.target.value);
+          setInvalid(false);
         }}
-        onBlur={props.onCancel}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") submit();
+          if (e.key === "Escape") onDone();
+        }}
+        onBlur={submit}
       />
-      <span className="hint">↵ 创建 · Esc 取消</span>
+      <span className={`hint${invalid ? " err" : ""}`}>
+        {invalid ? "以 / 或 .md 结尾" : "↵ 创建 · Esc"}
+      </span>
     </div>
   );
 }
@@ -159,16 +197,7 @@ function NewRow(props: {
 export function FileTree({ open, onNavigate }: { open?: boolean; onNavigate?: () => void }) {
   const tree = useNotesStore((s) => s.tree);
   const currentPath = useNotesStore((s) => s.currentPath);
-  const createFile = useNotesStore((s) => s.createFile);
   const [creatingIn, setCreatingIn] = useState<string | null>(null);
-  const [rootName, setRootName] = useState("");
-
-  const createRoot = () => {
-    const file = ensureMd(rootName);
-    if (file) void createFile(file);
-    setRootName("");
-    setCreatingIn(null);
-  };
 
   return (
     <aside className={`sidebar${open ? " open" : ""}`}>
@@ -180,8 +209,7 @@ export function FileTree({ open, onNavigate }: { open?: boolean; onNavigate?: ()
         ))}
         {creatingIn === "" && (
           <li>
-            <NewRow target="/" value={rootName} onChange={setRootName}
-              onSubmit={createRoot} onCancel={() => { setRootName(""); setCreatingIn(null); }} />
+            <NewRow dir="" onDone={() => setCreatingIn(null)} />
           </li>
         )}
       </ul>

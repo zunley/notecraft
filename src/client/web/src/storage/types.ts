@@ -28,6 +28,8 @@ export interface StorageAdapter {
   readFile(path: string): Promise<{ content: string; hash: string; mtime: number }>;
   /** 乐观锁：base_hash 不符抛 ConflictError */
   writeFile(path: string, content: string, baseHash?: string): Promise<void>;
+  /** 递归创建目录（已存在则幂等成功） */
+  createDir(path: string): Promise<void>;
   rename(from: string, to: string): Promise<void>;
   /** 移入 .trash/（回收站属笔记本内容、随同步走） */
   remove(path: string): Promise<void>;

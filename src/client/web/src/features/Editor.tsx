@@ -1,7 +1,11 @@
 /**
  * 编辑器：CodeMirror 6，编辑 / 分栏预览 / 预览三态（DESIGN.md §3.3）。
  *
- * - 保存走本地 writeFile（防抖 ~2s，baseHash 乐观锁，冲突抛 ConflictError → 状态胶囊提示）；
+ * - 编辑态内联渲染（模式 A，与 note.md 同方案）：非光标行隐藏 markdown 标记、
+ *   标题/引用行装饰（features/inlinePreview），光标处展开源码——边写边见样式；
+ *
+ * - 保存走本地 writeFile（防抖 ~2s，baseHash 乐观锁，冲突抛 ConflictError）；
+ *   保存状态胶囊在顶栏（note.md 设计）：正文只留内容，冲突/异常才出横幅；
  * - 预览渲染 lib/markdown（唯一实现），wiki 内链点击 → lib/search 解析后跳转（不存在则新建）；
  * - 冲突（本地文件被别处修改）时提供「覆盖」重试——服务端同步冲突副本在阶段 5。
  * - 需实测 iOS WKWebView 触控选区与软键盘顶起（里程碑 M5 验证项）。
@@ -9,14 +13,31 @@
 import { useEffect, useRef, useState } from "react";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { autocompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
-import { markdown } from "@codemirror/lang-markdown";
-import { bracketMatching, defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+import { EditorState } from "@codemirror/state";
+import { bracketMatching, HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { EditorView, drawSelection, keymap } from "@codemirror/view";
+import { tags as t } from "@lezer/highlight";
+import { Autolink, Strikethrough, TaskList } from "@lezer/markdown";
+import { inlinePreview } from "./inlinePreview";
 import { parseWikiHref, renderMarkdown } from "../lib/markdown";
 import { resolveWikiPath } from "../lib/search";
 import { flatFiles, useNotesStore } from "../state/notes";
 
 const SAVE_DEBOUNCE_MS = 800; // 本地保存防抖（同步推送防抖 ~2s 另在 engine）
+
+/** 语法高亮（内联渲染的「源码展开行」/ 分栏左栏共用，与预览 .md 样式同风格） */
+const hlStyle = HighlightStyle.define([
+  { tag: [t.heading1, t.heading2, t.heading3, t.heading4, t.heading5, t.heading6], class: "cm-tok-heading" },
+  { tag: t.strong, class: "cm-tok-strong" },
+  { tag: t.emphasis, class: "cm-tok-em" },
+  { tag: t.strikethrough, class: "cm-tok-strike" },
+  { tag: [t.monospace, t.special(t.monospace)], class: "cm-tok-code" },
+  { tag: t.link, class: "cm-tok-link" },
+  { tag: t.url, class: "cm-tok-url" },
+  { tag: t.quote, class: "cm-tok-quote" },
+  { tag: [t.meta, t.processingInstruction, t.comment, t.contentSeparator], class: "cm-tok-meta" },
+]);
 
 /** 内链补全：`[[` 后列出全部笔记路径（与 ⌘K 同源 tree，M6 打磨项） */
 function wikiCompletion(ctx: CompletionContext): CompletionResult | null {
@@ -36,7 +57,6 @@ export function Editor() {
   const contentVersion = useNotesStore((s) => s.contentVersion);
   const viewMode = useNotesStore((s) => s.viewMode);
   const status = useNotesStore((s) => s.status);
-  const lastSavedAt = useNotesStore((s) => s.lastSavedAt);
   const error = useNotesStore((s) => s.error);
 
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -47,19 +67,26 @@ export function Editor() {
   const draftRef = useRef(""); // ⌘S 取最新草稿用
   const [draft, setDraft] = useState("");
   const mounted = currentPath !== null;
+  const showEditor = viewMode !== "preview";
+  const showPreview = viewMode !== "edit";
 
-  // 视图只建一次（避免重渲染重建导致光标/历史丢失）
+  // 视图只建一次（避免重渲染重建导致光标/历史丢失）；
+  // 但预览态会卸载编辑器宿主 DOM——切回时必须重建（与 note.md「模式切换时重建」一致），
+  // 故 effect 依赖 showEditor；内容经 draftRef 保留，不丢未存草稿。
   useEffect(() => {
     if (!hostRef.current) return;
     const view = new EditorView({
       parent: hostRef.current,
-      extensions: [
+      state: EditorState.create({
+        doc: draftRef.current,
+        extensions: [
         EditorView.lineWrapping,
         drawSelection(),
         history(),
         bracketMatching(),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        markdown(),
+        syntaxHighlighting(hlStyle),
+        markdown({ base: markdownLanguage, extensions: [Strikethrough, TaskList, Autolink] }),
+        inlinePreview,
         autocompletion({ override: [wikiCompletion] }),
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
         EditorView.updateListener.of((update) => {
@@ -75,7 +102,8 @@ export function Editor() {
             pendingRef.current = null;
           }, SAVE_DEBOUNCE_MS);
         }),
-      ],
+        ],
+      }),
     });
     viewRef.current = view;
     return () => {
@@ -83,12 +111,11 @@ export function Editor() {
       view.destroy();
       viewRef.current = null;
     };
-  }, [mounted]);
+  }, [mounted, showEditor]);
 
   // 切换文件 / 外部重载（contentVersion）：先兜底处理旧草稿，再同步编辑器内容
+  // （预览态视图已卸载：草稿状态照常同步，重建视图时以 draftRef 起步）
   useEffect(() => {
-    const view = viewRef.current;
-    if (!view) return;
     if (saveTimer.current) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
@@ -108,7 +135,10 @@ export function Editor() {
       void useNotesStore.getState().save(pending.text, { expectedPath: pending.path });
     }
     pendingRef.current = null;
-    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: currentContent } });
+    const view = viewRef.current;
+    if (view) {
+      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: currentContent } });
+    }
     setDraft(currentContent);
     draftRef.current = currentContent;
   }, [currentPath, contentVersion]);
@@ -160,35 +190,29 @@ export function Editor() {
     );
   }
 
-  const showEditor = viewMode !== "preview";
-  const showPreview = viewMode !== "edit";
-
   return (
     <div className="editor-wrap">
       <article className="paper" style={showEditor && showPreview ? { maxWidth: "none", padding: "28px 32px" } : undefined}>
-        <div className={`doc-status${status === "saving" ? " saving" : ""}${status === "conflict" ? " conflict" : ""}`}>
-          {status === "saving" && "● 保存中…"}
-          {status === "saved" && `● 已保存${lastSavedAt ? ` · ${new Date(lastSavedAt).toLocaleTimeString()}` : ""}`}
-          {status === "conflict" && (
-            <>
-              ● 冲突（别处已修改）
-              <button
-                className="nb-btn"
-                style={{ padding: "1px 8px", fontSize: "0.68rem", marginLeft: 6 }}
-                onClick={() => flushSave(draft, true)}
-              >
-                覆盖
-              </button>
-            </>
-          )}
-          {(status === "idle" || status === "loading") && "● 就绪"}
-        </div>
-        <div className="doc-meta">{currentPath}</div>
-        {error && status === "idle" && <div className="doc-status conflict">● {error}</div>}
+        {status === "conflict" && (
+          <div className="conflict">
+            <b>文件已被外部修改</b>
+            <span>（AI 或同步盘改动了它）</span>
+            <button className="nb-btn" onClick={() => flushSave(draft, true)}>
+              覆盖保存
+            </button>
+          </div>
+        )}
+        {error && status === "idle" && (
+          <div className="conflict">
+            <b>出错</b>
+            <span>{error}</span>
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
           {showEditor && (
             <div
+              key="cm-host"
               ref={hostRef}
               className="cm-host"
               style={{ flex: showPreview ? "1 1 50%" : "1 1 100%", minWidth: 0 }}
@@ -196,6 +220,7 @@ export function Editor() {
           )}
           {showPreview && (
             <div
+              key="md-preview"
               className="md"
               style={{ flex: showEditor ? "1 1 50%" : "1 1 100%", minWidth: 0 }}
               onClick={onPreviewClick}

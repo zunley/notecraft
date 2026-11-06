@@ -12,12 +12,12 @@ export function StatusBar({ onSyncNow }: { onSyncNow?: () => void }) {
   const pending = useSyncStore((s) => s.pending);
   const syncing = useSyncStore((s) => s.syncing);
   const online = useSyncStore((s) => s.online);
-  const rev = useSyncStore((s) => s.rev);
   const lastError = useSyncStore((s) => s.lastError);
 
   const hasToken = useAuthStore((s) => s.hasToken);
   const unlocked = useAuthStore((s) => s.unlocked);
   const username = useAuthStore((s) => s.username);
+  const openGate = useAuthStore((s) => s.openGate);
 
   const [menu, setMenu] = useState(false);
 
@@ -36,7 +36,6 @@ export function StatusBar({ onSyncNow }: { onSyncNow?: () => void }) {
       <span>
         <span className={`dot ${dot}`} /> {label}
       </span>
-      {rev !== null && <span>rev {rev}</span>}
       <span className="spacer" />
       {hasToken && (
         <button
@@ -47,10 +46,17 @@ export function StatusBar({ onSyncNow }: { onSyncNow?: () => void }) {
           {syncing ? "同步中…" : "立即同步"}
         </button>
       )}
+      {hasToken && !unlocked && (
+        <button onClick={openGate} title="输入口令解锁本机加密（登录即解锁）">
+          解锁
+        </button>
+      )}
       {hasToken ? (
         <button onClick={() => setMenu((v) => !v)}>{username ?? "账户"} ▾</button>
       ) : (
-        <button onClick={() => useAuthStore.setState({ guest: false })}>登录</button>
+        <button onClick={openGate} title="登录或创建账号，开启跨设备同步与 AI">
+          登录
+        </button>
       )}
       {menu && <AccountMenu onClose={() => setMenu(false)} />}
     </footer>

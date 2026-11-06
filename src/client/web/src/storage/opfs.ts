@@ -115,6 +115,10 @@ export class OpfsAdapter implements StorageAdapter {
     await writable.close();
   }
 
+  async createDir(path: string): Promise<void> {
+    await this.dirHandle(path, true); // 递归创建（已存在即幂等）
+  }
+
   async rename(from: string, to: string): Promise<void> {
     const segs = parts(from);
     if (segs.length === 0) throw new NotFoundError(`rename: ${from}`);

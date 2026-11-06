@@ -108,6 +108,10 @@ export class TauriFsAdapter implements StorageAdapter {
     await writeFile(abs, new TextEncoder().encode(content));
   }
 
+  async createDir(path: string): Promise<void> {
+    await mkdir(this.abs(path), { recursive: true }); // 递归创建（已存在即幂等）
+  }
+
   async rename(from: string, to: string): Promise<void> {
     const a = this.abs(from);
     const b = this.abs(to);

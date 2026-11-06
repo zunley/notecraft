@@ -1,7 +1,8 @@
 /**
  * AI 悬浮窗：前端工具循环的 UI（DESIGN.md §3.4）。
  *
- * - 流式输出 + 工具卡片（读/写标签）；write-gate 确认条（会话级授权，仅存当前对话内存）；
+ * - 流式输出 + 工具卡片（读/写标签）；写入授权开关在面板顶部（点击切换，默认允许写入，
+ *   会话级、仅存当前对话内存）——关闭后写工具才逐次征求确认；
  * - 会话历史经 ai/sessionStore 落 IndexedDB，刷新可恢复；服务端零留存、无会话 API；
  * - 无网/无 token 时给出提示（离线时本地工具照常，仅 LLM 回复需要网络）；
  * - 写工具执行后刷新文件树（AI 直接改了本地文件）。
@@ -61,12 +62,12 @@ export function Chat({ onClose }: { onClose?: () => void }) {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [gate, setGate] = useState<{ name: string; desc: string } | null>(null);
-  const [authorized, setAuthorized] = useState(false);
+  const [authorized, setAuthorized] = useState(true); // 默认允许写入
 
   const historyRef = useRef<ChatMessage[]>([]);
   const keysRef = useRef(0);
   const nid = () => ++keysRef.current;
-  const authorizedRef = useRef(false);
+  const authorizedRef = useRef(true);
   const gateResolveRef = useRef<((ok: boolean) => void) | null>(null);
   const transportRef = useRef<LlmTransport | null>(null);
   transportRef.current ??= createTransport();
@@ -90,7 +91,7 @@ export function Chat({ onClose }: { onClose?: () => void }) {
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight });
   }, [msgs, gate]);
 
-  // write-gate：写工具执行前征求确认（会话级授权只存本对话内存，不持久化）
+  // write-gate：默认免确认直接写；顶部开关关闭时才逐次征求确认（会话级，只存本对话内存）
   const onGate = useCallback((req: GateRequest): Promise<boolean> => {
     if (authorizedRef.current) return Promise.resolve(true);
     return new Promise<boolean>((resolve) => {
@@ -206,8 +207,8 @@ export function Chat({ onClose }: { onClose?: () => void }) {
     setMsgs([]);
     historyRef.current = [];
     setError(null);
-    authorizedRef.current = false;
-    setAuthorized(false);
+    authorizedRef.current = true;
+    setAuthorized(true);
     void sessionStore.clear(CONVERSATION_ID);
   };
 
@@ -220,7 +221,11 @@ export function Chat({ onClose }: { onClose?: () => void }) {
     <>
       <div className="ai-head">
         ✦ AI 助手
-        <span className={`badge${authorized ? "" : " off"}`}>
+        <span
+          className={`badge${authorized ? "" : " off"}`}
+          title="点击切换：是否允许 AI 直接写入笔记（仅当前会话）"
+          onClick={() => toggleAuthorize(!authorized)}
+        >
           {authorized ? "会话已授权写入" : "写入需确认"}
         </span>
         <button className="x" title="新对话" onClick={resetConversation} style={{ marginLeft: 12 }}>
@@ -291,16 +296,6 @@ export function Chat({ onClose }: { onClose?: () => void }) {
         <button disabled={running || !input.trim()} onClick={() => void send()}>
           发送
         </button>
-      </div>
-      <div className="gate-bar" style={{ borderTop: "none", background: "var(--card)" }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-          <input
-            type="checkbox"
-            checked={authorized}
-            onChange={(e) => toggleAuthorize(e.target.checked)}
-          />
-          本对话免确认写入（仅当前会话内存，不持久化）
-        </label>
       </div>
     </>
   );

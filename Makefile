@@ -57,7 +57,7 @@ clean:
 	rm -rf src/client/web/dist src/client/web/node_modules src/client/tauri/target
 
 # --- 发布 ---
-# 打 v* tag 触发 CI 释出镜像到 ghcr.io：make release VERSION=1.0.0
+# 打 v* tag 触发 CI 释出镜像到 ghcr.io 与桌面/Android 安装包：make release VERSION=1.0.0
 release:
 ifndef VERSION
 	$(error 用法: make release VERSION=1.0.0)

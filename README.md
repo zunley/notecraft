@@ -20,7 +20,7 @@ docker compose up -d
 浏览器打开 http://localhost:8080/ 即可使用：不登录直接写笔记，注册/登录后开启同步与 AI。
 （Web 与服务端两个容器一并启动，用户只需打开上面这个地址。）
 
-桌面版（Windows / macOS / Linux 安装包）：随 `v*` tag 的 CI 发布释出。
+桌面版（Windows / macOS / Linux 安装包）与 Android 版（APK）：随 `v*` tag 的 CI 发布释出（GitHub Releases）。
 
 ## 环境变量
 
@@ -40,4 +40,5 @@ docker compose up -d
 - 设计定稿：[docs/DESIGN.md](docs/DESIGN.md)
 - 接口规格：[docs/API.md](docs/API.md)
 - 项目架构：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- 数据与同步：[docs/DATA.md](docs/DATA.md)（数据存在哪、同步怎么走）
 - 样式定稿：[docs/style/](docs/style/README.md)

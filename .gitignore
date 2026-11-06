@@ -10,6 +10,9 @@ src/client/web/dist/
 
 # Tauri / Rust
 src/client/tauri/target/
+# 移动端工程由 `tauri android/ios init` 现场生成（CI 亦如此），不入库
+src/client/tauri/gen/android/
+src/client/tauri/gen/ios/
 
 # 运行时数据（笔记本副本与应用数据不入库）
 notes/

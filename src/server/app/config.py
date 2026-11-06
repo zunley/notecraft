@@ -9,6 +9,8 @@
 - NOTE_MD_RELAY_DAILY_QUOTA    中继日配额（默认 200 次/天/用户）
 - NOTE_MD_TOKEN_TTL            token 有效期（默认 72h，支持 s/m/h/d）
 - NOTE_MD_TOKEN_SECRET         token 签名密钥（可选；缺省时在数据目录生成并持久化）
+- NOTE_MD_ALLOWED_ORIGINS      CORS 白名单（逗号分隔，支持 *）——仅「Web 客户端直连且不同源」时需要；
+                               同源代理部署（compose.web.yaml 默认）无需配置
 - NOTE_MD_ROOT / NOTE_MD_DATA_DIR   /notes 密文仓库（<uid>/ 分片）/ 用户表目录
 - OPENAI_BASE_URL / OPENAI_API_KEY / OPENAI_MODEL   LLM 网关（仅中继使用，不下发）
 
@@ -73,6 +75,12 @@ def _registration_env(name: str, default: str) -> str:
     return raw
 
 
+def _origins_env(name: str) -> tuple[str, ...]:
+    """逗号分隔的 CORS 白名单；去尾斜杠、去空项。"""
+    raw = os.environ.get(name, "")
+    return tuple(o.strip().rstrip("/") for o in raw.split(",") if o.strip())
+
+
 @dataclass(frozen=True)
 class Settings:
     """不可变配置快照；core/adapters 构造时注入，运行期不重读环境。"""
@@ -90,6 +98,9 @@ class Settings:
     # 认证
     token_ttl: float = 72 * 3600  # 秒
     token_secret: str = ""  # HMAC-SHA256 密钥；空则由组装根生成/读取持久化文件
+
+    # CORS：仅「Web 客户端直连且跨源」时需要（同源代理部署留空）；空 = 不下发 CORS 头
+    allowed_origins: tuple[str, ...] = ()
 
     # 目录
     notes_root: Path = Path("/notes")  # 密文仓库：<notes_root>/<uid>/
@@ -116,6 +127,7 @@ def load_settings() -> Settings:
         relay_daily_quota=_int_env("NOTE_MD_RELAY_DAILY_QUOTA", 200),
         token_ttl=_duration_env("NOTE_MD_TOKEN_TTL", "72h"),
         token_secret=os.environ.get("NOTE_MD_TOKEN_SECRET", "").strip(),
+        allowed_origins=_origins_env("NOTE_MD_ALLOWED_ORIGINS"),
         notes_root=Path(os.environ.get("NOTE_MD_ROOT", "/notes")),
         data_dir=Path(os.environ.get("NOTE_MD_DATA_DIR", "/data")),
         openai_base_url=os.environ.get("OPENAI_BASE_URL", "").strip().rstrip("/"),

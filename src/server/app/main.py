@@ -62,6 +62,26 @@ def _resolve_token_secret(settings: Settings) -> bytes:
     return secret
 
 
+def _install_cors(app: FastAPI, settings: Settings) -> None:
+    """CORS 白名单（仅 Web 客户端直连跨源时配置；同源代理部署留空即不下发任何 CORS 头）。
+
+    不用 cookie（Bearer token），故 allow_credentials=False——无 CSRF 面。
+    """
+    origins = settings.allowed_origins
+    if not origins:
+        return
+    from fastapi.middleware.cors import CORSMiddleware
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(origins),
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
+        allow_credentials=False,
+        max_age=600,
+    )
+
+
 def _install_error_handlers(app: FastAPI) -> None:
     """领域错误 → HTTP 的唯一翻译点（core 抛、这里译，API.md §2）。"""
 
@@ -145,6 +165,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # ── 横切 + 路由 ────────────────────────────────────────────
     _install_error_handlers(app)
+    _install_cors(app, settings)
     _install_auth_rate_limit(app, settings)
     app.include_router(api_router)
 

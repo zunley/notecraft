@@ -3,12 +3,14 @@
  *
  * - 用户只输入一次口令：本地派生 L + KEK（口令不出客户端），登录拿回 protected_key
  *   解封 MK——加密对用户无感；
+ * - 面向零基础用户，只呈现两个能力：**不登录可用**（先离线使用）与
+ *   **注册/登录后同步**——不出现服务器地址、端口等任何配置项（服务端地址是
+ *   部署者层面的事：Web 版同源部署，客户端永远同源请求）；
  * - 无账号可创建（策略 GET /api/auth/policy）；注册即登录 + 一次性导出 REK 恢复密钥；
  * - 已有 token 但 MK 不在内存（刷新后）→ 本页作「解锁门」；可用 REK 离线解锁；
  * - 「先离线使用」= 关闭登录门（guest）——本地功能永不被阻塞（本地优先铁律）。
  */
 import { useEffect, useRef, useState } from "react";
-import { setServerUrl, config } from "../lib/config";
 import { useAuthStore } from "../state/auth";
 
 type Mode = "login" | "register";
@@ -40,7 +42,6 @@ export function Login() {
   const [username, setUsername] = useState(username0 ?? "");
   const [password, setPassword] = useState("");
   const [invite, setInvite] = useState("");
-  const [server, setServer] = useState(config.serverUrl);
   const rekInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -110,7 +111,7 @@ export function Login() {
           <div className="sub">
             {hasToken
               ? "输入口令解锁本机加密（口令只在本地派生，服务端只见登录凭证哈希）"
-              : "本地优先：不登录也能用；登录后开启跨设备同步与 AI（口令永不上传）"}
+              : "不登录也能使用；注册或登录后开启跨设备同步与 AI"}
           </div>
 
           {canRegister && (
@@ -191,18 +192,6 @@ export function Login() {
           {!hasToken && (
             <div className="switch">
               <a onClick={dismissGuest}>先离线使用 →</a>
-              <span style={{ margin: "0 8px", color: "var(--tx-3)" }}>|</span>
-              <a
-                onClick={() => {
-                  const next = window.prompt("服务端地址（空 = 同源）", config.serverUrl);
-                  if (next !== null) {
-                    setServerUrl(next);
-                    setServer(config.serverUrl);
-                  }
-                }}
-              >
-                服务器{server ? `：${server}` : "：同源"}
-              </a>
             </div>
           )}
         </form>

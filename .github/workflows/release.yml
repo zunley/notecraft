@@ -207,6 +207,7 @@ jobs:
       # Tauri 的 Android 模板不带签名配置，故产物在此统一签名（zipalign + apksigner）：
       # 固定密钥 = 新 APK 能覆盖安装升级、保留数据；每次临时密钥则系统视为另一个应用，必须卸载重装。
       - name: 签名 APK
+        working-directory: src/client/tauri
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -233,7 +234,7 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             VERSION="${GITHUB_REF_NAME#v}"
           else
-            VERSION="$(jq -r .version src/client/tauri/tauri.conf.json)"
+            VERSION="$(jq -r .version tauri.conf.json)"
           fi
 
           BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
@@ -252,7 +253,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: bundle-android
-          path: dist/*
+          path: src/client/tauri/dist/*
           if-no-files-found: error
 
   # 汇总所有安装包 → 创建 GitHub Release（仅 tag 触发时）

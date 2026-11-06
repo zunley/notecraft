@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "npm run dev --prefix web",
     "devUrl": "http://localhost:5173",
-    "beforeBuildCommand": "npm run build --prefix web",
+    "beforeBuildCommand": "npm run build --prefix ../web",
     "frontendDist": "../web/dist"
   },
   "app": {

@@ -12,7 +12,7 @@
 services:
   server:
     build: .
-    image: ghcr.io/zunley/notecraft:latest
+    image: ghcr.io/zunley/notecraft-server:latest
     ports:
       - "${NOTE_MD_PORT:-8080}:8080"   # 桌面端同步 / 直连客户端需要；仅 Web 同源代理时可注释
     volumes:
@@ -34,7 +34,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
-    image: ghcr.io/zunley/notecraft-web:latest
+    image: ghcr.io/zunley/notecraft:latest
     ports:
       - "${NOTE_MD_WEB_PORT:-8081}:80"
     environment:

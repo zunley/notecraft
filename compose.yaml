@@ -1,7 +1,7 @@
 services:
   notecraft:
     build: .
-    image: ghcr.io/zunley/notecraft:latest
+    image: ghcr.io/zunley/notecraft-server:latest
     ports:
       - "${NOTE_MD_PORT:-8080}:8080"
     volumes:

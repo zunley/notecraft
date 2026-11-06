@@ -60,7 +60,7 @@ jobs:
       - id: meta-server
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/zunley/notecraft
+          images: ghcr.io/zunley/notecraft-server
           tags: |
             type=semver,pattern={{version}}
             type=raw,value=latest
@@ -68,7 +68,7 @@ jobs:
       - id: meta-web
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/zunley/notecraft-web
+          images: ghcr.io/zunley/notecraft
           tags: |
             type=semver,pattern={{version}}
             type=raw,value=latest

@@ -88,7 +88,7 @@
 33. **登录页去配置化**：移除服务器地址输入，只留「登录 / 创建账号 / 先离线使用」——面向零基础用户，服务端地址不进 UI
 34. **Web 客户端镜像**：`Dockerfile.web`（node 构建 → nginx 运行时）+ `nginx.conf`（静态 + 同源代理 `/api`、`/health`，SSE 不缓冲）+ `docker-entrypoint.d/`（默认值 + 运行时配置写入）
 35. **`compose.web.yaml`**：静态与 API 分容器、同源代理（用户仍单源访问）；`make web-up/web-build/web-down`
-36. **CI**：`v*` tag 同时释出 `notecraft` 与 `notecraft-web` 两个镜像；文档（README / ARCHITECTURE §7）
+36. **CI**：`v*` tag 同时释出 `notecraft`（Web 客户端）与 `notecraft-server`（服务端）两个镜像——主名归用户优先使用的 Web 版；文档（README / ARCHITECTURE §7）
 
 **出口**：`docker compose -f compose.web.yaml up -d` 后浏览器单源完成注册/登录/同步，用户全程无任何配置动作。
 

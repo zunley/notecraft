@@ -238,7 +238,7 @@ register / login → 经 `UserStore` 校验登录凭证哈希 → HMAC-SHA256 to
 - **Web 版**（面向零基础用户，**用户零配置**：只面对「不登录可用」与「注册/登录后同步」两个能力，
   界面不出现服务器地址等任何配置项）：
   - **单容器**（上条，默认）：`compose.yaml`，静态与 API 同源，一个端口进；
-  - **分容器**：`Dockerfile.web` + `compose.web.yaml`——Web 客户端镜像 `ghcr.io/zunley/notecraft-web`
+  - **分容器**：`Dockerfile.web` + `compose.web.yaml`——Web 客户端镜像 `ghcr.io/zunley/notecraft`
     （nginx 静态 + 同源代理 `/api`、`/health` → 服务端），浏览器视角仍单源（免 CORS、免配置）；
   - 静态产物也可直接丢任意静态托管（纯本地形态，无服务端也能用）；
   - 服务端地址属于**部署者层面**：同源部署下不存在该值；跨源直连时经运行时注入
@@ -265,7 +265,8 @@ M4 Tauri 桌面 → M5 响应式+移动端 → M6 打磨），本节不复写，
 
 **命名约定**
 - 仓库/产品名：**notecraft**；环境变量前缀：**`NOTE_MD_*`**（实现与文档一致，改前缀需同步 DESIGN.md）；
-- 镜像：`ghcr.io/zunley/notecraft`；
+- 镜像（用户优先：主名给用户直接使用的 Web 版）：`ghcr.io/zunley/notecraft`（Web 客户端）、
+  `ghcr.io/zunley/notecraft-server`（服务端，单容器含内嵌 Web 静态托管）；
 - 服务端 Python 包名：**`app`**（`uvicorn app.main:app --app-dir src/server`）；
 - Tauri 壳目录：**`src/client/tauri/`**（若 `tauri init` CLI 不支持自定义路径，
   则回退默认 `src-tauri/` 移入 `src/client/`——未决项 1）。

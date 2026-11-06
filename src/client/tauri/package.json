@@ -1,0 +1,8 @@
+{
+  "name": "notecraft-tauri",
+  "private": true,
+  "description": "Tauri 壳的 CLI 入口包装：Android gradle 构建链（BuildTask）以 `npm run tauri` 从此处重新调用 CLI",
+  "scripts": {
+    "tauri": "node ../web/node_modules/@tauri-apps/cli/tauri.js"
+  }
+}

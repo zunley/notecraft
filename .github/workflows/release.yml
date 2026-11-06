@@ -186,15 +186,17 @@ jobs:
           jq --arg v "$v" '.version = $v' src/client/tauri/tauri.conf.json > /tmp/tauri.conf.json
           mv /tmp/tauri.conf.json src/client/tauri/tauri.conf.json
 
+      # 注意：必须用 npm run 调 CLI——gradle 的 BuildTask 会烤进「npm run -- tauri …」
+      # 供其构建时回调 CLI（android-studio-script），依赖本目录 package.json 的 tauri 脚本
       - name: 生成 Android 工程（gen/android）
         working-directory: src/client/tauri
-        run: ../web/node_modules/.bin/tauri android init --ci --skip-targets-install
+        run: npm run tauri -- android init --ci --skip-targets-install
 
       - name: 构建 APK（arm64）
         working-directory: src/client/tauri
         # 只出 arm64（armv7 老设备已边缘化）；如需兼容老设备加回 armv7，
         # 如需上架商店再加 --aab 出 AAB
-        run: ../web/node_modules/.bin/tauri android build --target aarch64 --apk
+        run: npm run tauri -- android build --target aarch64 --apk
 
       # 正式签名密钥（一次性生成、妥善保存；丢失后无法向老用户发升级）：
       #   keytool -genkeypair -v -keystore notecraft-upload.keystore -alias notecraft \
